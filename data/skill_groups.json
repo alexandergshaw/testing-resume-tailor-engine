@@ -1,0 +1,57 @@
+{
+  "_comment": "Themed skill groups for the posting-driven Skills section. Groups are scored by how strongly the posting's extracted keywords hit them (explicit 'keywords' membership beats 'categories' membership); the top 5 become the section headings and their matched keywords become the rows. File order breaks score ties, so put preferred headings first.",
+  "groups": [
+    {
+      "heading": "Programming & Frameworks",
+      "keywords": ["Python", "Java", "JavaScript", "TypeScript", "C#", "C++", "C", "Go", "Rust", "Ruby", "PHP", "Swift", "Kotlin", "Scala", "R", ".NET", "ASP.NET", "Spring Boot", "React", "Angular", "Vue.js", "Next.js", "Node.js", "Express.js", "Django", "Flask", "FastAPI", "Ruby on Rails", "Laravel", "HTML", "CSS", "GraphQL", "REST APIs", "gRPC", "Bash", "PowerShell", "Shell Scripting", "jQuery", "Redux", "Tailwind CSS", "Bootstrap"],
+      "categories": ["technology"]
+    },
+    {
+      "heading": "Cloud & Infrastructure",
+      "keywords": ["AWS", "Azure", "Google Cloud", "Kubernetes", "Docker", "Helm", "Terraform", "Ansible", "OpenShift", "EC2", "S3", "AWS Lambda", "ECS", "EKS", "Fargate", "CloudFormation", "RDS", "SQS", "SNS", "Azure Functions", "AKS", "Linux", "Windows Server", "VMware", "Nginx", "Serverless", "Infrastructure as Code", "Microservices"]
+    },
+    {
+      "heading": "DevOps & Delivery Automation",
+      "keywords": ["CI/CD", "DevOps", "DevSecOps", "Jenkins", "GitHub Actions", "GitLab CI", "CircleCI", "Azure DevOps", "GitOps", "Site Reliability Engineering", "Test Automation", "Unit Testing", "Selenium", "Cypress", "Playwright", "pytest", "JUnit", "Observability", "Monitoring and Alerting", "Datadog", "Grafana", "Prometheus", "Splunk", "Release Management", "Configuration Management"]
+    },
+    {
+      "heading": "Data & Analytics",
+      "keywords": ["SQL", "T-SQL", "PL/SQL", "PostgreSQL", "MySQL", "SQL Server", "Oracle", "MongoDB", "DynamoDB", "Redis", "Elasticsearch", "Snowflake", "Databricks", "BigQuery", "Redshift", "Power BI", "Tableau", "Looker", "Excel", "ETL", "Data Pipelines", "Data Warehousing", "Apache Spark", "PySpark", "Kafka", "Airflow", "dbt", "Pandas", "NumPy", "Data Analytics", "Data Science", "Business Intelligence", "Big Data", "Data Engineering", "Data Visualization", "Data Governance", "Data Quality"]
+    },
+    {
+      "heading": "AI & Machine Learning",
+      "keywords": ["Machine Learning", "Deep Learning", "Natural Language Processing", "Computer Vision", "Artificial Intelligence", "Generative AI", "Large Language Models", "TensorFlow", "PyTorch", "Keras", "scikit-learn", "Hugging Face", "LangChain", "SageMaker", "MLOps", "OpenCV"]
+    },
+    {
+      "heading": "Security & Compliance",
+      "keywords": ["Cybersecurity", "Application Security", "Network Security", "Cloud Security", "Identity and Access Management", "Active Directory", "Okta", "Zero Trust", "Threat Modeling", "Secure Coding", "CISSP", "CISM", "CompTIA Security+", "Certified Ethical Hacker", "OSCP", "Compliance", "Risk Management", "Audit", "GDPR", "HIPAA", "SOX", "PCI DSS", "SOC 2", "NIST", "ISO 27001", "FedRAMP", "Governance, Risk, and Compliance", "Fraud Detection", "CrowdStrike", "Burp Suite", "Nessus", "HashiCorp Vault", "Data Privacy"]
+    },
+    {
+      "heading": "Leadership & Collaboration",
+      "keywords": ["Leadership", "Mentoring", "Coaching", "Team Building", "Stakeholder Management", "Cross-Functional Collaboration", "Communication", "Executive Communication", "Influence", "Conflict Resolution", "Facilitation", "Negotiation"],
+      "categories": ["soft_skill"]
+    },
+    {
+      "heading": "Agile & Delivery Methods",
+      "keywords": ["Agile", "Scrum", "Kanban", "SAFe", "Lean", "Waterfall", "Sprint Planning", "Backlog Refinement", "Retrospectives", "Estimation", "PMP", "Certified Scrum Master", "ITIL", "ITIL Foundation", "Six Sigma", "Requirements Gathering", "Project Management", "Program Management", "Product Management", "Business Analysis", "Change Management"],
+      "categories": ["methodology"]
+    },
+    {
+      "heading": "Architecture & System Design",
+      "keywords": ["Solution Architecture", "Software Architecture", "Enterprise Architecture", "Distributed Systems", "Event-Driven Architecture", "Domain-Driven Design", "Service-Oriented Architecture", "Design Patterns", "API Design", "Scalability", "High Availability", "Reliability", "Performance Optimization", "Disaster Recovery", "TOGAF"]
+    },
+    {
+      "heading": "Enterprise Platforms & Tools",
+      "keywords": ["Salesforce", "SAP", "ServiceNow", "Workday", "SharePoint", "Microsoft 365", "Dynamics 365", "NetSuite", "Pega", "MuleSoft", "Informatica", "SSIS", "Power Apps", "Power Automate", "UiPath", "Jira", "Confluence", "Git", "GitHub", "GitLab", "Mainframe", "Epic", "Robotic Process Automation"]
+    },
+    {
+      "heading": "Industry & Domain Knowledge",
+      "keywords": ["Insurance", "Financial Services", "Healthcare", "E-Commerce", "Retail", "Supply Chain", "Logistics", "Manufacturing", "Telecommunications", "Public Sector", "Payments", "Underwriting", "Claims Processing", "CRM", "ERP", "Digital Transformation", "Legacy Modernization", "Cloud Migration", "Cloud Computing"],
+      "categories": ["domain"]
+    },
+    {
+      "heading": "User Experience & Product",
+      "keywords": ["UX Design", "UI Design", "User Research", "Usability Testing", "Wireframing", "Prototyping", "Accessibility", "Responsive Design", "Figma", "Design Thinking", "A/B Testing"]
+    }
+  ]
+}

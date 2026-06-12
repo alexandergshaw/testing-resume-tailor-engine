@@ -1,0 +1,131 @@
+{
+  "_comment": "Your accomplishment bank. Each entry is a sentence FRAGMENT that can drop into one of the template's composed bullets. 'slots' lists the NORMALIZED placeholder names the entry may fill. 'tags' are matched against keywords extracted from the job posting (use canonical names from skills_taxonomy.json where possible). Replace these seeded examples with your real accomplishments.",
+  "entries": [
+    {
+      "id": "action-led",
+      "slots": ["ACTION"],
+      "text": "Led",
+      "tags": ["Leadership", "Mentoring", "Team Building"]
+    },
+    {
+      "id": "action-architected",
+      "slots": ["ACTION"],
+      "text": "Architected",
+      "tags": ["Solution Architecture", "Software Architecture", "System Design"]
+    },
+    {
+      "id": "action-automated",
+      "slots": ["ACTION"],
+      "text": "Automated",
+      "tags": ["Automation", "CI/CD", "DevOps", "Scripting"]
+    },
+    {
+      "id": "init-modernization",
+      "slots": ["INITIATIVE_TYPE", "INITIATIVE_OR_RESPONSIBILITY", "SOLUTION_OR_INITIATIVE"],
+      "text": "platform modernization",
+      "tags": ["Legacy Modernization", "Cloud Migration", "Digital Transformation"]
+    },
+    {
+      "id": "init-automation",
+      "slots": ["INITIATIVE_TYPE", "SOLUTION_OR_INITIATIVE"],
+      "text": "workflow automation",
+      "tags": ["Automation", "Robotic Process Automation", "Process Improvement"]
+    },
+    {
+      "id": "sol-internal-platform",
+      "slots": ["SOLUTION_OR_INITIATIVE", "SOLUTION_OR_CAPABILITY", "PROJECT_SOLUTION", "JOB_RELEVANT_SOLUTIONS"],
+      "text": "an internal self-service platform",
+      "tags": ["Web Development", "Microservices", "REST APIs", "Cloud Computing"]
+    },
+    {
+      "id": "sol-data-pipeline",
+      "slots": ["SOLUTION_OR_INITIATIVE", "SOLUTION_OR_CAPABILITY", "PROJECT_SOLUTION", "SOLUTION_OR_PROCESS"],
+      "text": "automated data pipelines",
+      "tags": ["ETL", "Data Engineering", "Data Pipelines", "SQL", "Python"]
+    },
+    {
+      "id": "sol-cicd",
+      "slots": ["SOLUTION_OR_PROCESS", "SOLUTION_OR_CAPABILITY", "EXISTING_SYSTEM_OR_PROCESS"],
+      "text": "the team's build and deployment process",
+      "tags": ["CI/CD", "DevOps", "Jenkins", "GitHub Actions", "Automation"]
+    },
+    {
+      "id": "result-cycle-time",
+      "slots": ["TECHNICAL_OR_BUSINESS_RESULT", "ACTION_RESULT", "RESULTING_CAPABILITY", "BUSINESS_OR_TECHNICAL_OUTCOME"],
+      "text": "reduced release cycle time",
+      "tags": ["CI/CD", "DevOps", "Automation", "Release Management"]
+    },
+    {
+      "id": "result-reliability",
+      "slots": ["TECHNICAL_OR_BUSINESS_RESULT", "BUSINESS_OR_TECHNICAL_OUTCOME", "RESULTING_CAPABILITY"],
+      "text": "improved system reliability and uptime",
+      "tags": ["Reliability", "High Availability", "Observability", "Monitoring and Alerting"]
+    },
+    {
+      "id": "impact-deploy-time",
+      "slots": ["MEASURABLE_IMPACT"],
+      "text": "a 70% reduction in deployment time",
+      "tags": ["CI/CD", "DevOps", "Automation"]
+    },
+    {
+      "id": "impact-manual-hours",
+      "slots": ["MEASURABLE_IMPACT"],
+      "text": "500+ manual hours saved annually",
+      "tags": ["Automation", "Process Improvement", "Robotic Process Automation"]
+    },
+    {
+      "id": "impact-defects",
+      "slots": ["MEASURABLE_IMPACT", "PERFORMANCE_OR_BUSINESS_METRIC"],
+      "text": "a 40% drop in production defects",
+      "tags": ["Quality Assurance", "Test Automation", "Code Reviews"]
+    },
+    {
+      "id": "scope-enterprise",
+      "slots": ["SCOPE_OR_STAKEHOLDERS", "SCOPE_OR_TEAM", "USERS_OR_STAKEHOLDERS"],
+      "text": "multiple enterprise business units",
+      "tags": ["Stakeholder Management", "Cross-Functional Collaboration"]
+    },
+    {
+      "id": "scope-team",
+      "slots": ["SCOPE_OR_TEAM", "SCOPE_OR_STAKEHOLDERS"],
+      "text": "a cross-functional team of engineers and analysts",
+      "tags": ["Leadership", "Cross-Functional Collaboration", "Agile"]
+    },
+    {
+      "id": "problem-manual-process",
+      "slots": ["PROBLEM_OR_REQUIREMENT"],
+      "text": "error-prone manual reporting processes",
+      "tags": ["Automation", "Reporting", "Process Improvement"]
+    },
+    {
+      "id": "strategic-efficiency",
+      "slots": ["STRATEGIC_OUTCOMES", "STRATEGIC_OUTCOME"],
+      "text": "operational efficiency gains",
+      "tags": ["Process Improvement", "Automation", "KPIs"]
+    },
+    {
+      "id": "capability-self-service",
+      "slots": ["NEW_CAPABILITY", "PRIMARY_CAPABILITY", "RESULTING_CAPABILITY"],
+      "text": "self-service access for business users",
+      "tags": ["Web Development", "Automation", "Customer Focus"]
+    },
+    {
+      "id": "approach-incremental",
+      "slots": ["TECHNICAL_APPROACH", "ACTION_OR_IMPLEMENTATION"],
+      "text": "incremental re-architecture and automated testing",
+      "tags": ["Refactoring", "Test Automation", "Legacy Modernization"]
+    },
+    {
+      "id": "project-scope-enterprise",
+      "slots": ["PROJECT_SCOPE"],
+      "text": "Enterprise",
+      "tags": ["Enterprise Architecture", "Digital Transformation"]
+    },
+    {
+      "id": "project-type-platform",
+      "slots": ["PROJECT_TYPE"],
+      "text": "Platform Initiative",
+      "tags": ["Cloud Computing", "Microservices", "Solution Architecture"]
+    }
+  ]
+}

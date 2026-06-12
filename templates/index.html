@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Tailor your resume to a posting</h1>
+  <p class="hint">Paste the job posting, upload your template resume, and review
+  every proposed value before anything is written.</p>
+  <form action="{{ url_for('web.parse') }}" method="post" enctype="multipart/form-data">
+    <label for="posting">Job posting</label>
+    <textarea id="posting" name="posting" rows="16"
+              placeholder="Paste the full job posting here…" required></textarea>
+
+    <label for="template">Template resume (.docx with {{ '{{PLACEHOLDERS}}' }})</label>
+    <input id="template" type="file" name="template" accept=".docx" required>
+
+    <button type="submit">Parse posting &amp; propose values</button>
+  </form>
+</section>
+{% endblock %}

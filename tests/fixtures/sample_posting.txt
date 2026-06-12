@@ -1,0 +1,28 @@
+Senior Software Engineering Lead
+Acme Insurance Group - Omaha, NE (Hybrid)
+
+About the role
+We are seeking a Senior Software Engineering Lead to drive modernization of our policy administration platform. You will lead a team of engineers building cloud-native services used by thousands of internal users and agents.
+
+What you'll do
+- Lead and mentor a team of 5-8 software engineers
+- Design and build microservices using C#, .NET, and Node.js on AWS
+- Champion CI/CD, automated testing, and infrastructure as code with Terraform
+- Partner with product owners and business stakeholders to shape the roadmap
+- Modernize legacy systems and guide cloud migration efforts
+- Drive agile ceremonies including sprint planning and retrospectives
+
+Requirements
+- 5+ years of professional software development experience with C#, .NET, or Java
+- Experience with AWS services such as Lambda, S3, and EC2
+- Strong knowledge of SQL Server and PostgreSQL
+- Hands-on experience with Docker and Kubernetes
+- Experience building REST APIs and event-driven architecture with Kafka
+- Excellent communication and stakeholder management skills
+- Proven leadership and mentoring experience
+
+Nice to have
+- Insurance or financial services domain experience
+- Python scripting experience
+- AWS Certified Solutions Architect certification
+- Experience with Power BI or Tableau reporting
