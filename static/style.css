@@ -119,6 +119,29 @@ button:hover { filter: brightness(1.1); }
 .badge-warn { background: #8a6d00; }
 
 .value-cell textarea { min-height: 56px; resize: vertical; }
+.value-tools { display: flex; align-items: center; gap: 10px; margin-top: 4px; flex-wrap: wrap; }
+.bank-picker { max-width: 320px; font: inherit; font-size: 12.5px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; color: var(--muted); }
+.remember { font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; font-weight: 400; margin: 0; white-space: nowrap; }
+
+.topnav { margin-left: auto; display: flex; gap: 14px; }
+.topnav a { color: #cdd6e4; text-decoration: none; font-size: 14px; }
+.topnav a:hover { color: #fff; }
+
+.bank-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; }
+@media (max-width: 800px) { .bank-grid { grid-template-columns: 1fr; } }
+.bank-grid label, .profile-form label { font-size: 13px; }
+.bank-grid input, .profile-form input { width: 100%; font: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+.bank-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.bank-table th { text-align: left; font-size: 12px; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--line); padding: 4px 8px; }
+.bank-row { border-bottom: 1px solid var(--line); padding: 8px 0; }
+.bank-entry { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: start; padding: 8px; }
+.bank-entry textarea, .bank-entry input { width: 100%; font: inherit; font-size: 13.5px; border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
+.bank-actions { display: flex; gap: 6px; }
+button.small { margin-top: 0; padding: 6px 12px; font-size: 13px; }
+button.danger { background: #b3261e; }
+.entry-id { grid-column: 1 / -1; font-family: Consolas, monospace; font-size: 11px; color: var(--muted); }
+.profile-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.profile-form button { grid-column: 1 / -1; justify-self: start; }
 
 .actions { display: flex; align-items: center; gap: 16px; }
 .secondary { color: var(--muted); }

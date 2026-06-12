@@ -23,6 +23,19 @@
           </td>
           <td class="value-cell">
             <textarea name="v_{{ ph.key }}" rows="2">{{ prop.value }}</textarea>
+            <div class="value-tools">
+              {% if prop.candidates %}
+              <select class="bank-picker" data-target="v_{{ ph.key }}">
+                <option value="">— insert from bank ({{ prop.candidates|length }}) —</option>
+                {% for candidate in prop.candidates %}
+                <option value="{{ candidate }}">{{ candidate }}</option>
+                {% endfor %}
+              </select>
+              {% endif %}
+              <label class="remember" title="Save this value to the bank for slot {{ ph.name }} when you generate">
+                <input type="checkbox" name="remember_{{ ph.key }}"> remember
+              </label>
+            </div>
           </td>
         </tr>
         {% endfor %}

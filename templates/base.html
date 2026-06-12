@@ -10,6 +10,10 @@
   <header class="topbar">
     <a class="brand" href="{{ url_for('web.index') }}">Resume Tailor Engine</a>
     <span class="tagline">deterministic, no LLM</span>
+    <nav class="topnav">
+      <a href="{{ url_for('web.index') }}">Tailor</a>
+      <a href="{{ url_for('web.bank') }}">Bank</a>
+    </nav>
   </header>
   {% with messages = get_flashed_messages() %}
     {% if messages %}

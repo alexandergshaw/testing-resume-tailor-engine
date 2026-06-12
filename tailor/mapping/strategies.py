@@ -1,7 +1,7 @@
 """Turn scanned placeholders into proposed values using the resolved strategy."""
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
 from pathlib import Path
 
@@ -31,6 +31,7 @@ class Proposal:
     value: str
     strategy: Strategy
     note: str = ""  # where the value came from, shown on the review screen
+    candidates: tuple[str, ...] = ()  # ranked bank alternatives for this slot
 
 
 @lru_cache(maxsize=1)
@@ -75,6 +76,20 @@ class Proposer:
         self._outcome_positions: dict[str, int] = {}
 
     def propose(self, placeholder: Placeholder) -> Proposal:
+        proposal = self._dispatch(placeholder)
+        candidates = self._bank_candidates(placeholder.name)
+        if candidates:
+            proposal = replace(proposal, candidates=candidates)
+        return proposal
+
+    def _bank_candidates(self, name: str, limit: int = 12) -> tuple[str, ...]:
+        """Every bank entry offering this slot, most relevant to the posting
+        first — surfaced as a dropdown on the review screen."""
+        matching = [e for e in self._library if name in e.slots]
+        matching.sort(key=lambda e: (-self._scores[e.id], e.id))
+        return tuple(e.text for e in matching[:limit])
+
+    def _dispatch(self, placeholder: Placeholder) -> Proposal:
         strategy, params = resolve(placeholder.name)
         if strategy is Strategy.PROFILE:
             return self._propose_profile(placeholder)

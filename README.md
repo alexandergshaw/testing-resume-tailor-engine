@@ -27,10 +27,20 @@ Run tests with `pytest`.
 | File | What it is |
 |---|---|
 | `data/profile.json` | Static facts about you (rank, years of experience, team size…), keyed by normalized placeholder name. Also holds fallback skills headings. |
-| `data/content_library.json` | Your accomplishment bank. Sentence fragments tagged with skills; the app picks the entries whose tags best match the job posting's keywords. **Replace the seeded examples with your real accomplishments.** |
+| `data/content_library.json` | Your **insertion bank**: scopes, metrics, outcomes, and accomplishment fragments tagged with skills. Maintained from the **/bank** page (or by hand). The app proposes the best match per slot and offers the rest as a ranked dropdown on the review screen. **Replace the seeded examples with your real accomplishments.** |
 | `data/skills_taxonomy.json` | ~340 known skills/technologies with aliases and categories. Extraction quality lives here — add anything your field uses. |
 | `data/skill_groups.json` | Themed skill groups ("Cloud & Infrastructure", "Data & Analytics"…). The 5 groups the posting's keywords hit hardest become your skills headings, and their matched keywords become the rows. |
 | `data/outcome_phrases.json` | Curated keyword → outcome/capability phrasing used to compose posting-driven Projects slots (e.g. CI/CD → "Faster, Safer Releases"). |
+
+### The insertion bank workflow
+
+Details a posting can never supply (your scopes, metrics, outcomes) live in the bank:
+
+1. **Pick** — on the review screen, any slot with banked entries shows an "insert from bank" dropdown, ranked by relevance to the current posting.
+2. **Remember** — tick *remember* next to a value you typed and it's saved to the bank when you generate, auto-tagged by running the text through the skills taxonomy.
+3. **Manage** — the **Bank** page (navbar) adds/edits/deletes entries and edits your profile values. Saves are atomic and keep a `.bak` of the previous file.
+
+The bank grows as you use the app: the first few resumes need typing, then your real numbers start showing up as one-click choices.
 
 ### Placeholder name normalization
 
