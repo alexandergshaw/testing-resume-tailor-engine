@@ -111,8 +111,10 @@ button:hover { filter: brightness(1.1); }
 }
 .badge-profile { background: #6c4fc4; }
 .badge-keywords { background: #2456c4; }
+.badge-phrase { background: #0e7490; }
 .badge-library { background: #1d7f4f; }
 .badge-skills { background: #b35a17; }
+.badge-header { background: #9333aa; }
 .badge-manual { background: #b3261e; }
 .badge-warn { background: #8a6d00; }
 

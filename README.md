@@ -26,9 +26,11 @@ Run tests with `pytest`.
 
 | File | What it is |
 |---|---|
-| `data/profile.json` | Static facts about you (rank, years of experience, team size…), keyed by normalized placeholder name. |
+| `data/profile.json` | Static facts about you (rank, years of experience, team size…), keyed by normalized placeholder name. Also holds fallback skills headings. |
 | `data/content_library.json` | Your accomplishment bank. Sentence fragments tagged with skills; the app picks the entries whose tags best match the job posting's keywords. **Replace the seeded examples with your real accomplishments.** |
 | `data/skills_taxonomy.json` | ~340 known skills/technologies with aliases and categories. Extraction quality lives here — add anything your field uses. |
+| `data/skill_groups.json` | Themed skill groups ("Cloud & Infrastructure", "Data & Analytics"…). The 5 groups the posting's keywords hit hardest become your skills headings, and their matched keywords become the rows. |
+| `data/outcome_phrases.json` | Curated keyword → outcome/capability phrasing used to compose posting-driven Projects slots (e.g. CI/CD → "Faster, Safer Releases"). |
 
 ### Placeholder name normalization
 
@@ -40,6 +42,8 @@ Run tests with `pytest`.
 |---|---|---|
 | PROFILE | `{{RANK}}`, `{{YEARS_OF_EXPERIENCE}}`, … | `profile.json` |
 | KEYWORD_JOIN | `{{JOB_RELEVANT_TECHNOLOGIES}}`, `{{DELIVERY_PRACTICES}}`, … | top extracted keywords of the relevant category |
-| LIBRARY_MATCH | `{{ACTION}}`, `{{MEASURABLE_IMPACT}}`, … | best-scoring content library entry (TF-IDF cosine + tag overlap, no entry used twice) |
-| SKILLS_DISTRIBUTE | the five `{{2 lines of comma separated skills}}` slots | keywords distributed across categories by occurrence order |
+| KEYWORD_PHRASE | Projects slots: `{{PROJECT_TYPE}}`, `{{PROJECT_SOLUTION}}`, `{{STRATEGIC_OUTCOME}}`, … | deterministic phrase patterns composed from posting keywords, the posting's own phrases, and `outcome_phrases.json` — **verify the wording reflects real work** |
+| LIBRARY_MATCH | `{{ACTION}}`, `{{MEASURABLE_IMPACT}}`, … | best-scoring content library entry (TF-IDF cosine + tag overlap, no entry used twice). Metric slots stay here on purpose — numbers must be real. |
+| SKILLS_HEADER | the five skills heading slots | top-ranked theme group from `skill_groups.json`; falls back to the static `profile.json` label |
+| SKILLS_DISTRIBUTE | the five `{{2 lines of comma separated skills}}` slots | the matched keywords of the theme group paired with each heading |
 | MANUAL | anything unrecognized | you, on the review screen |

@@ -20,11 +20,11 @@ REAL_TEMPLATE_EXPECTATIONS = {
     "ENVIRONMENT_TYPES": Strategy.PROFILE,
     "LEADERSHIP_LEVEL": Strategy.PROFILE,
     "LEADERSHIP_SCOPE": Strategy.PROFILE,
-    "ROLE_SPECIFIC_EXPERTISE": Strategy.PROFILE,
-    "CORE_PROFESSIONAL_CAPABILITIES": Strategy.PROFILE,
-    "METHODS_SYSTEMS_TECHNOLOGIES": Strategy.PROFILE,
-    "LEADERSHIP_DELIVERY_COLLABORATION": Strategy.PROFILE,
-    "SUPPORTING_TOOLS_KNOWLEDGE": Strategy.PROFILE,
+    "ROLE_SPECIFIC_EXPERTISE": Strategy.SKILLS_HEADER,
+    "CORE_PROFESSIONAL_CAPABILITIES": Strategy.SKILLS_HEADER,
+    "METHODS_SYSTEMS_TECHNOLOGIES": Strategy.SKILLS_HEADER,
+    "LEADERSHIP_DELIVERY_COLLABORATION": Strategy.SKILLS_HEADER,
+    "SUPPORTING_TOOLS_KNOWLEDGE": Strategy.SKILLS_HEADER,
     "LEADERSHIP_CAPABILITIES": Strategy.KEYWORD_JOIN,
     "JOB_RELEVANT_TECHNOLOGIES": Strategy.KEYWORD_JOIN,
     "TECHNICAL_CAPABILITIES": Strategy.KEYWORD_JOIN,
@@ -52,16 +52,17 @@ REAL_TEMPLATE_EXPECTATIONS = {
     "SCOPE_OR_TEAM": Strategy.LIBRARY_MATCH,
     "USERS_OR_STAKEHOLDERS": Strategy.LIBRARY_MATCH,
     "STRATEGIC_OUTCOMES": Strategy.LIBRARY_MATCH,
-    "STRATEGIC_OUTCOME": Strategy.LIBRARY_MATCH,
     "RESULTING_CAPABILITY": Strategy.LIBRARY_MATCH,
     "PROBLEM_OR_REQUIREMENT": Strategy.LIBRARY_MATCH,
     "BUSINESS_OR_TECHNICAL_OUTCOME": Strategy.LIBRARY_MATCH,
-    "PROJECT_SCOPE": Strategy.LIBRARY_MATCH,
-    "PROJECT_TYPE": Strategy.LIBRARY_MATCH,
-    "PROJECT_SOLUTION": Strategy.LIBRARY_MATCH,
-    "PRIMARY_CAPABILITY": Strategy.LIBRARY_MATCH,
-    "NEW_CAPABILITY": Strategy.LIBRARY_MATCH,
-    "EXISTING_SYSTEM_OR_PROCESS": Strategy.LIBRARY_MATCH,
+    # Projects slots are posting-driven; only metric slots stay library-backed.
+    "STRATEGIC_OUTCOME": Strategy.KEYWORD_PHRASE,
+    "PROJECT_SCOPE": Strategy.KEYWORD_PHRASE,
+    "PROJECT_TYPE": Strategy.KEYWORD_PHRASE,
+    "PROJECT_SOLUTION": Strategy.KEYWORD_PHRASE,
+    "PRIMARY_CAPABILITY": Strategy.KEYWORD_PHRASE,
+    "NEW_CAPABILITY": Strategy.KEYWORD_PHRASE,
+    "EXISTING_SYSTEM_OR_PROCESS": Strategy.KEYWORD_PHRASE,
     "PERFORMANCE_OR_BUSINESS_METRIC": Strategy.LIBRARY_MATCH,
 }
 
@@ -137,13 +138,74 @@ def test_keyword_join_categories():
     assert tech.value == "Python, C#, AWS, Docker"  # tech + tool_platform by score
 
 
-def test_skills_distribute_by_occurrence():
+def test_skills_rows_follow_group_plan():
+    # Groups by summed fixture scores: Programming (Python+C#=18),
+    # Cloud & Infrastructure (AWS+Docker=11), Leadership & Collaboration (8),
+    # Industry & Domain (Insurance+Cloud Migration=7). CI/CD is alone in its
+    # group (< 2 keywords) so DevOps drops and CI/CD goes unclaimed.
     proposer = make_proposer()
     assert proposer.propose(_ph("2_LINES_OF_COMMA_SEPARATED_SKILLS", 0)).value == "Python, C#"
     assert proposer.propose(_ph("2_LINES_OF_COMMA_SEPARATED_SKILLS", 1)).value == "AWS, Docker"
-    assert proposer.propose(_ph("2_LINES_OF_COMMA_SEPARATED_SKILLS", 2)).value == "CI/CD"
-    assert proposer.propose(_ph("2_LINES_OF_COMMA_SEPARATED_SKILLS", 3)).value == "Leadership, Mentoring"
-    assert proposer.propose(_ph("2_LINES_OF_COMMA_SEPARATED_SKILLS", 4)).value == "Insurance, Cloud Migration"
+    assert proposer.propose(_ph("2_LINES_OF_COMMA_SEPARATED_SKILLS", 2)).value == "Leadership, Mentoring"
+    assert proposer.propose(_ph("2_LINES_OF_COMMA_SEPARATED_SKILLS", 3)).value == "Insurance, Cloud Migration"
+    # Beyond the planned groups: legacy fixed-category fallback (index 4 = domain).
+    fallback = proposer.propose(_ph("2_LINES_OF_COMMA_SEPARATED_SKILLS", 4))
+    assert fallback.value == "Insurance, Cloud Migration"
+
+
+def test_skills_headers_follow_group_plan_then_profile():
+    proposer = make_proposer()
+    h0 = proposer.propose(_ph("ROLE_SPECIFIC_EXPERTISE"))
+    h1 = proposer.propose(_ph("CORE_PROFESSIONAL_CAPABILITIES"))
+    h2 = proposer.propose(_ph("METHODS_SYSTEMS_TECHNOLOGIES"))
+    h3 = proposer.propose(_ph("LEADERSHIP_DELIVERY_COLLABORATION"))
+    h4 = proposer.propose(_ph("SUPPORTING_TOOLS_KNOWLEDGE"))
+    assert [h.value for h in (h0, h1, h2, h3)] == [
+        "Programming & Frameworks", "Cloud & Infrastructure",
+        "Leadership & Collaboration", "Industry & Domain Knowledge"]
+    assert all(h.strategy is Strategy.SKILLS_HEADER for h in (h0, h1, h2, h3))
+    # Only 4 groups qualified; the 5th heading falls back to profile.json,
+    # which doesn't define it in this fixture -> manual.
+    assert h4.strategy is Strategy.MANUAL
+
+
+def test_phrase_project_type_and_capability():
+    proposer = make_proposer()
+    # domain+methodology pool in fixture order: CI/CD, Insurance, Cloud Migration.
+    assert proposer.propose(_ph("PROJECT_TYPE")).value == "CI/CD Initiative"
+    assert proposer.propose(_ph("PRIMARY_CAPABILITY")).value == "Python"
+
+
+def test_phrase_outcome_walks_curated_map():
+    proposer = make_proposer()
+    # First keyword with a curated outcome is Docker, then CI/CD.
+    assert proposer.propose(_ph("STRATEGIC_OUTCOME", 0)).value == "Consistent Environments"
+    assert proposer.propose(_ph("STRATEGIC_OUTCOME", 1)).value == "Faster, Safer Releases"
+
+
+def test_phrase_solution_uses_topic_when_available():
+    topical = KEYWORDS + [
+        Keyword("policy administration platform", "topic", 6.0, 2),
+        Keyword("Senior Software Engineering Lead", "topic", 19.0, 1),  # role-y, filtered
+    ]
+    proposer = Proposer(topical, PROFILE, LIBRARY)
+    solution = proposer.propose(_ph("PROJECT_SOLUTION"))
+    assert solution.value == "a Python-based solution supporting the policy administration platform"
+    # Topics never repeat: the only eligible one is spent, so the next
+    # topic-hungry slot falls back to the domain-keyword pattern.
+    existing = proposer.propose(_ph("EXISTING_SYSTEM_OR_PROCESS"))
+    assert existing.value == "legacy insurance workflows"
+
+
+def test_phrase_solution_without_topics():
+    proposer = make_proposer()
+    assert proposer.propose(_ph("PROJECT_SOLUTION")).value == "a Python and C# solution"
+    assert proposer.propose(_ph("EXISTING_SYSTEM_OR_PROCESS")).value == "legacy insurance workflows"
+
+
+def test_phrase_scope_defaults_enterprise():
+    proposer = make_proposer()
+    assert proposer.propose(_ph("PROJECT_SCOPE")).value == "Enterprise"
 
 
 def test_library_no_repeat_and_relevance():

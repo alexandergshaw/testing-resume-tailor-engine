@@ -65,8 +65,12 @@ class Proposer:
         self._pool_positions: dict[tuple[str, ...], int] = {}
         self._group_plan = build_group_plan(keywords)
         self._header_index = 0
+        # Topics usable mid-sentence: 3+ words weeds out company/location
+        # scraps ("Group Omaha") and bare gerunds ("software development").
         self._topics = [k.canonical for k in keywords
-                        if k.category == "topic" and not _ROLE_WORD_RE.search(k.canonical)]
+                        if k.category == "topic"
+                        and len(k.canonical.split()) >= 3
+                        and not _ROLE_WORD_RE.search(k.canonical)]
         self._topic_position = 0
         self._outcome_positions: dict[str, int] = {}
 
@@ -124,10 +128,10 @@ class Proposer:
     # ----- posting-driven phrases (Projects section) -----
 
     def _next_topic(self) -> str | None:
-        if not self._topics:
-            return None
+        # Unlike keyword pools, topics never wrap: a posting phrase repeated
+        # across project rows reads like copy-paste, so use each once.
         if self._topic_position >= len(self._topics):
-            self._topic_position = 0
+            return None
         topic = self._topics[self._topic_position]
         self._topic_position += 1
         return _midcase(topic)
@@ -191,9 +195,15 @@ class Proposer:
             topic = self._next_topic()
             if topic:
                 return f"the {topic}"
-            picked = self._take_from_pool(("domain",), 1)
-            if picked:
-                return f"legacy {_midcase(picked[0].canonical)} workflows"
+            # Action-style domain keywords ("Legacy Modernization", "Cloud
+            # Migration") read badly as the thing being modernized — skip them.
+            for _ in range(len(self._category_pool(("domain",)))):
+                picked = self._take_from_pool(("domain",), 1)
+                if not picked:
+                    break
+                name = picked[0].canonical.lower()
+                if not any(w in name for w in ("legacy", "modernization", "migration")):
+                    return f"legacy {_midcase(picked[0].canonical)} workflows"
             return None
 
         return None
