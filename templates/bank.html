@@ -2,64 +2,45 @@
 {% block content %}
 <section class="card">
   <h1>Insertion bank</h1>
-  <p class="hint">Your reusable scopes, metrics, outcomes, and accomplishment fragments.
-  Entries appear as dropdown choices on the review screen, ranked by relevance to each posting.
-  Tags left blank are derived automatically from the text.</p>
+  <p class="hint">Your reusable scopes, metrics, outcomes, and accomplishment fragments —
+  managed through <code>/api/v1/bank</code>, same as any client app would.
+  {% if readonly %}<strong>This deployment is read-only.</strong>{% endif %}</p>
 
-  <form class="bank-add" action="{{ url_for('web.bank_add') }}" method="post">
+  <label for="api-key">API key (optional)</label>
+  <input id="api-key" type="password" autocomplete="off" placeholder="sent as X-API-Key">
+
+  {% if not readonly %}
+  <form id="add-form" class="bank-add">
     <div class="bank-grid">
       <label>Text
-        <textarea name="text" rows="2" placeholder="e.g. a 70% reduction in deployment time" required></textarea>
+        <textarea id="add-text" rows="2" placeholder="e.g. a 70% reduction in deployment time" required></textarea>
       </label>
       <label>Slot
-        <input name="slot" list="slot-names" placeholder="MEASURABLE_IMPACT" required>
-        <datalist id="slot-names">
-          {% for slot in known_slots %}<option value="{{ slot }}">{% endfor %}
-        </datalist>
+        <input id="add-slot" list="slot-names" placeholder="MEASURABLE_IMPACT" required>
+        <datalist id="slot-names"></datalist>
       </label>
-      <label>Tags (comma separated, optional)
-        <input name="tags" placeholder="CI/CD, DevOps">
+      <label>Tags (comma separated; blank = auto)
+        <input id="add-tags" placeholder="CI/CD, DevOps">
       </label>
     </div>
     <button type="submit">Add to bank</button>
   </form>
+  {% endif %}
 </section>
 
 <section class="card">
-  <h2>Entries ({{ entries|length }})</h2>
-  <table class="bank-table">
-    <thead><tr><th>Text</th><th>Slots</th><th>Tags</th><th></th></tr></thead>
-    <tbody>
-      {% for entry in entries %}
-      <tr>
-        <td colspan="4" class="bank-row">
-          <form action="{{ url_for('web.bank_update', entry_id=entry.id) }}" method="post" class="bank-entry">
-            <textarea name="text" rows="1">{{ entry.text }}</textarea>
-            <input name="slots" value="{{ entry.slots|join(', ') }}" title="Slots this entry can fill">
-            <input name="tags" value="{{ entry.tags|join(', ') }}" title="Tags matched against posting keywords">
-            <span class="bank-actions">
-              <button type="submit" class="small">Save</button>
-              <button type="submit" class="small danger"
-                      formaction="{{ url_for('web.bank_delete', entry_id=entry.id) }}">Delete</button>
-            </span>
-            <span class="entry-id">{{ entry.id }}</span>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <h2 id="entries-heading">Entries</h2>
+  <div id="entries"></div>
 </section>
 
 <section class="card">
   <h2>Profile values</h2>
-  <p class="hint">Static facts used by PROFILE placeholders ({{ '{{RANK}}' }}, {{ '{{USER_SCALE}}' }}, …)
-  and as fallback skills headings.</p>
-  <form action="{{ url_for('web.bank_profile') }}" method="post" class="profile-form">
-    {% for key, value in profile.items() %}
-    <label>{{ key }}<input name="p_{{ key }}" value="{{ value }}"></label>
-    {% endfor %}
-    <button type="submit">Save profile</button>
-  </form>
+  <p class="hint">Static facts used by PROFILE placeholders and as fallback skills headings.</p>
+  <form id="profile-form" class="profile-form"></form>
+</section>
+
+<section class="card devpanel">
+  <details><summary>API request / response log</summary><pre id="api-log"></pre></details>
 </section>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='bank.js') }}"></script>{% endblock %}

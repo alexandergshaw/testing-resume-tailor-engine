@@ -2,7 +2,6 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
-UPLOADS_DIR = PROJECT_ROOT / "uploads"
 
 TAXONOMY_PATH = DATA_DIR / "skills_taxonomy.json"
 STOPWORDS_PATH = DATA_DIR / "stopwords_en.txt"

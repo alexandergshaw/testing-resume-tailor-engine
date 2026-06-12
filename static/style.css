@@ -39,7 +39,21 @@ main { max-width: 1180px; margin: 24px auto; padding: 0 16px; }
   border: 1px solid #e8d28a;
   border-radius: 6px;
 }
-.flash p { margin: 4px 0; }
+.flash-error { background: #fde8e6; border-color: #d9958f; }
+
+.devpanel { margin-top: 18px; }
+.devpanel summary { cursor: pointer; font-weight: 600; }
+.devpanel pre {
+  background: #161b26;
+  color: #c7d1e0;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 12px;
+  max-height: 420px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
 .card {
   background: var(--card);

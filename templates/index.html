@@ -2,17 +2,51 @@
 {% block content %}
 <section class="card">
   <h1>Tailor your resume to a posting</h1>
-  <p class="hint">Paste the job posting, upload your template resume, and review
-  every proposed value before anything is written.</p>
-  <form action="{{ url_for('web.parse') }}" method="post" enctype="multipart/form-data">
+  <p class="hint">This page calls the same <code>/api/v1</code> endpoints your apps will:
+  <code>POST /proposals</code> to review, <code>POST /tailor</code> to download.</p>
+
+  <form id="proposals-form">
     <label for="posting">Job posting</label>
-    <textarea id="posting" name="posting" rows="16"
-              placeholder="Paste the full job posting here…" required></textarea>
+    <textarea id="posting" rows="14" placeholder="Paste the full job posting here…" required></textarea>
 
     <label for="template">Template resume (.docx with {{ '{{PLACEHOLDERS}}' }})</label>
-    <input id="template" type="file" name="template" accept=".docx" required>
+    <input id="template" type="file" accept=".docx" required>
 
-    <button type="submit">Parse posting &amp; propose values</button>
+    <label for="api-key">API key (optional — sent as X-API-Key, stored in this browser)</label>
+    <input id="api-key" type="password" autocomplete="off" placeholder="only needed against an authed deployment">
+
+    <button type="submit" id="proposals-btn">Get proposals</button>
   </form>
 </section>
+
+<section class="review-layout" id="review" hidden>
+  <div class="card review-form">
+    <h1>Review proposed values</h1>
+    <p class="hint" id="review-summary"></p>
+    <table class="review-table">
+      <thead><tr><th>Placeholder</th><th>Proposed value</th></tr></thead>
+      <tbody id="review-rows"></tbody>
+    </table>
+    <div class="actions">
+      <button type="button" id="tailor-btn">Generate tailored resume (.docx)</button>
+      <a class="secondary" href="#" id="start-over">Start over</a>
+    </div>
+  </div>
+  <aside class="card sidebar">
+    <h2>Extracted keywords</h2>
+    <p class="hint">Copy-paste fodder, grouped by category.</p>
+    <div id="keyword-groups"></div>
+  </aside>
+</section>
+
+<section class="card devpanel">
+  <details>
+    <summary>API request / response log</summary>
+    <div class="actions">
+      <button type="button" class="small" id="copy-curl">Copy proposals call as curl</button>
+    </div>
+    <pre id="api-log"></pre>
+  </details>
+</section>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='app.js') }}"></script>{% endblock %}

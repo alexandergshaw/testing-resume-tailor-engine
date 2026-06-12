@@ -1,5 +1,5 @@
 """Insertion bank: persistence, dedupe, auto-tagging, candidates, and the
-remember-on-generate flow."""
+remember-on-tailor flow (now via /api/v1)."""
 import io
 import json
 
@@ -14,7 +14,6 @@ from tailor.library.store import (LibraryEntry, add_entry, auto_tags,
                                   delete_entry, load_library, save_library,
                                   slugify, update_entry)
 from tailor.mapping.strategies import Proposer
-from tailor.web import sessions
 
 
 @pytest.fixture()
@@ -109,38 +108,46 @@ def _template_bytes():
     return buffer.getvalue()
 
 
-def test_bank_page_and_crud_routes(client, bank_path):
-    response = client.post("/bank/add", data={
+def test_bank_api_crud(client, bank_path):
+    created = client.post("/api/v1/bank/entries", json={
         "text": "a 40% drop in defects after adopting test automation",
         "slot": "measurable impact",  # normalized to MEASURABLE_IMPACT
-        "tags": "",
     })
-    assert response.status_code == 302
+    assert created.status_code == 201
     entries = load_library(bank_path)
     assert entries[0].slots == ("MEASURABLE_IMPACT",)
     assert "Test Automation" in entries[0].tags  # auto-tagged from taxonomy
 
-    page = client.get("/bank").get_data(as_text=True)
-    assert "a 40% drop in defects" in page
+    duplicate = client.post("/api/v1/bank/entries", json={
+        "text": "a 40% drop in defects after adopting test automation",
+        "slot": "MEASURABLE_IMPACT",
+    })
+    assert duplicate.status_code == 409
 
-    assert client.post(f"/bank/delete/{entries[0].id}").status_code == 302
+    listing = client.get("/api/v1/bank").get_json()
+    assert listing["entries"][0]["text"].startswith("a 40% drop")
+
+    entry_id = entries[0].id
+    updated = client.put(f"/api/v1/bank/entries/{entry_id}", json={
+        "text": "a 45% drop in defects", "slots": ["MEASURABLE_IMPACT"], "tags": []})
+    assert updated.status_code == 200
+    assert load_library(bank_path)[0].text == "a 45% drop in defects"
+
+    assert client.delete(f"/api/v1/bank/entries/{entry_id}").status_code == 200
     assert load_library(bank_path) == []
+    assert client.delete("/api/v1/bank/entries/nope").status_code == 404
 
 
-def test_remember_on_generate_saves_to_bank(client, bank_path):
-    parse = client.post("/parse", data={
+def test_remember_on_tailor_saves_to_bank(client, bank_path):
+    key = "MEASURABLE_IMPACT::0"
+    response = client.post("/api/v1/tailor", data={
         "posting": "We need CI/CD and Kubernetes experience",
         "template": (io.BytesIO(_template_bytes()), "t.docx"),
-    }, content_type="multipart/form-data")
-    token = parse.headers["Location"].rstrip("/").split("/")[-1]
-    session = sessions.get(token)
-    key = session.placeholders[0].key
-
-    generated = client.post(f"/generate/{token}", data={
-        f"v_{key}": "a 9x improvement in deploy frequency",
-        f"remember_{key}": "on",
-    })
-    assert generated.status_code == 200
+        "values": json.dumps({key: "a 9x improvement in deploy frequency"}),
+        "remember": json.dumps([key]),
+    }, content_type="multipart/form-data", headers={"Accept": "application/json"})
+    assert response.status_code == 200
+    assert response.get_json()["report"]["remembered"]
     entries = load_library(bank_path)
     assert len(entries) == 1
     assert entries[0].text == "a 9x improvement in deploy frequency"

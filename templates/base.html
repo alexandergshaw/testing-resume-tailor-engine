@@ -6,25 +6,21 @@
   <title>Resume Tailor Engine</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body data-readonly="{{ '1' if readonly else '0' }}">
   <header class="topbar">
     <a class="brand" href="{{ url_for('web.index') }}">Resume Tailor Engine</a>
-    <span class="tagline">deterministic, no LLM</span>
+    <span class="tagline">deterministic, no LLM — UI is a client of /api/v1</span>
     <nav class="topnav">
       <a href="{{ url_for('web.index') }}">Tailor</a>
       <a href="{{ url_for('web.bank') }}">Bank</a>
+      <a href="/api/v1/health" target="_blank">Health</a>
     </nav>
   </header>
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      <div class="flash">
-        {% for message in messages %}<p>{{ message }}</p>{% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
+  <div class="flash" id="flash" hidden></div>
   <main>
     {% block content %}{% endblock %}
   </main>
-  <script src="{{ url_for('static', filename='review.js') }}"></script>
+  <script src="{{ url_for('static', filename='common.js') }}"></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>
