@@ -1,6 +1,8 @@
 {
   "_comment": "Static facts about you, keyed by NORMALIZED placeholder name (braces stripped, uppercased, spaces/hyphens -> underscores). Edit these values to match your background. Any placeholder not found here falls back to manual entry on the review screen.",
   "values": {
+    "FULL_NAME": "Alex Shaw",
+    "CURRENT_EMPLOYER": "Mutual of Omaha",
     "RANK": "Senior",
     "TOP_RANK": "Lead",
     "MEDIUM_RANK": "Senior",

@@ -6,7 +6,7 @@ const READONLY = document.body.dataset.readonly === "1";
 const summarizeRequest = (extraFields = {}) => {
   const lines = [
     `posting: ${$("#posting").value.length} chars`,
-    `template: ${templateFile ? `${templateFile.name} (${templateFile.size} bytes)` : "—"}`,
+    `template: ${templateFile ? `${templateFile.name} (${templateFile.size} bytes)` : "bundled default"}`,
   ];
   for (const [name, value] of Object.entries(extraFields)) {
     lines.push(`${name}: ${value}`);
@@ -18,14 +18,13 @@ const summarizeRequest = (extraFields = {}) => {
 const buildFormData = () => {
   const fd = new FormData();
   fd.append("posting", $("#posting").value);
-  fd.append("template", templateFile);
+  if (templateFile) fd.append("template", templateFile);  // omit -> bundled default
   return fd;
 };
 
 $("#proposals-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  templateFile = $("#template").files[0];
-  if (!templateFile) { flash("Pick a .docx template first.", true); return; }
+  templateFile = $("#template").files[0] || null;
   $("#proposals-btn").disabled = true;
   try {
     const res = await fetch("/api/v1/proposals", {

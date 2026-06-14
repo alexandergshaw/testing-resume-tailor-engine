@@ -35,6 +35,11 @@ REAL_TEMPLATE_EXPECTATIONS = {
     "SOLUTION_TYPES": Strategy.KEYWORD_JOIN,
     "AREA_OF_EMPHASIS": Strategy.KEYWORD_JOIN,
     "AREAS_OF_EMPHASIS": Strategy.KEYWORD_JOIN,
+    # Standardized names (current template) ...
+    "COURSE_TOPICS_3": Strategy.KEYWORD_JOIN,
+    "COURSE_TOPICS_4": Strategy.KEYWORD_JOIN,
+    "SKILLS_LINE": Strategy.SKILLS_DISTRIBUTE,
+    # ... and their pre-standardization aliases (older templates still work).
     "LIST_OF_3_COURSE_TOPICS_RELEVANT_TO_JOB_POSTING_PRIORITIZE_TECHNOLOGIES_PEOPLE_SKILLS": Strategy.KEYWORD_JOIN,
     "LIST_OF_4_COURSE_TOPICS_RELEVANT_TO_JOB_POSTING_PRIORITIZE_TECHNOLOGIES_PEOPLE_SKILLS": Strategy.KEYWORD_JOIN,
     "2_LINES_OF_COMMA_SEPARATED_SKILLS": Strategy.SKILLS_DISTRIBUTE,
@@ -81,6 +86,8 @@ def test_unknown_name_is_manual():
 def test_course_topics_count_comes_from_name():
     _, params = resolve("LIST_OF_4_COURSE_TOPICS_RELEVANT_TO_JOB_POSTING")
     assert params["n"] == 4
+    _, std = resolve("COURSE_TOPICS_3")
+    assert std["n"] == 3
 
 
 def _ph(name, occurrence=0):

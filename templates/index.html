@@ -10,7 +10,8 @@
     <textarea id="posting" rows="14" placeholder="Paste the full job posting here…" required></textarea>
 
     <label for="template">Template resume (.docx with {{ '{{PLACEHOLDERS}}' }})</label>
-    <input id="template" type="file" accept=".docx" required>
+    <input id="template" type="file" accept=".docx">
+    <p class="hint">Leave blank to use the bundled standardized template.</p>
 
     <label for="api-key">API key (optional — sent as X-API-Key, stored in this browser)</label>
     <input id="api-key" type="password" autocomplete="off" placeholder="only needed against an authed deployment">

@@ -30,7 +30,8 @@ _RULES = [
     (r"^(TOP_|MEDIUM_|LOW_)?RANK$", Strategy.PROFILE, None),
     (r"^YEARS_OF_EXPERIENCE$", Strategy.PROFILE, None),
     (r"^(PRIMARY_FUNCTION|FUNCTION|SPECIALIZATION|SCALE_DESCRIPTOR|USER_SCALE"
-     r"|EVENT_SCALE|ENVIRONMENT_TYPES|LEADERSHIP_LEVEL|LEADERSHIP_SCOPE)$",
+     r"|EVENT_SCALE|ENVIRONMENT_TYPES|LEADERSHIP_LEVEL|LEADERSHIP_SCOPE"
+     r"|FULL_NAME|CURRENT_EMPLOYER)$",
      Strategy.PROFILE, None),
     (r"^(ROLE_SPECIFIC_EXPERTISE|CORE_PROFESSIONAL_CAPABILITIES"
      r"|METHODS_SYSTEMS_TECHNOLOGIES|LEADERSHIP_DELIVERY_COLLABORATION"
@@ -46,7 +47,11 @@ _RULES = [
      {"categories": ("domain",), "n": 1}),
     (r"^(AREAS_OF_EMPHASIS|DOMAIN_CAPABILITIES|SOLUTION_TYPES)$", Strategy.KEYWORD_JOIN,
      {"categories": ("domain",), "n": 2}),
+    # Standardized names plus their pre-standardization aliases (so older
+    # templates with the verbose placeholder text still resolve).
+    (r"^COURSE_TOPICS_(\d+)$", Strategy.KEYWORD_JOIN, _course_topics),
     (r"^LIST_OF_(\d+)_COURSE_TOPICS", Strategy.KEYWORD_JOIN, _course_topics),
+    (r"^SKILLS_LINE$", Strategy.SKILLS_DISTRIBUTE, None),
     (r"^2_LINES_OF_COMMA_SEPARATED_SKILLS$", Strategy.SKILLS_DISTRIBUTE, None),
     # Posting-driven Projects slots. Exact-anchored so they win over the
     # LIBRARY prefix rule below; metric slots stay with the library.

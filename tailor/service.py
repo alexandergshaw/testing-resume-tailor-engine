@@ -14,6 +14,7 @@ from .docxio.scanner import scan
 from .extraction.extractor import Keyword, extract_keywords
 from .library.store import LibraryEntry, load_library, load_profile, slugify
 from .mapping.strategies import propose_all
+from .paths import DEFAULT_COVER_LETTER_TEMPLATE
 
 
 class ServiceError(Exception):
@@ -128,23 +129,30 @@ def propose_for(posting: str, docx_bytes: bytes, profile: dict | None = None,
 
 
 def tailor_document(posting: str, docx_bytes: bytes, profile: dict | None = None,
-                    library: list | None = None,
-                    values: dict | None = None) -> tuple[bytes, dict]:
+                    library: list | None = None, values: dict | None = None,
+                    field_values: dict | None = None) -> tuple[bytes, dict]:
     """Fill the template. `values` maps slot key ("NAME::occ") -> final text;
-    slots without an override use their proposal. An explicit empty override
-    (or an empty proposal) leaves the {{placeholder}} in the document and is
-    reported as unfilled."""
+    `field_values` maps a placeholder NAME -> text applied to ALL its
+    occurrences (handy for per-applicant fields like TARGET_ORGANIZATION that
+    repeat). Precedence per slot: values > field_values > proposal. An empty
+    result leaves the {{placeholder}} in the document and is reported unfilled."""
     if values is not None and not isinstance(values, dict):
         raise InvalidInputError("'values' must be an object of slot key -> text")
+    if field_values is not None and not isinstance(field_values, dict):
+        raise InvalidInputError("'field_values' must be an object of name -> text")
     slots, keywords = propose_for(posting, docx_bytes, profile, library)
 
     fill_values: dict[tuple[str, int], str] = {}
     report_slots = []
     for slot in slots:
         override = None if values is None else values.get(slot.key)
+        field_override = None if field_values is None else field_values.get(slot.name)
         if override is not None:
             final = str(override).replace("\r\n", "\n").strip()
             source = "overridden"
+        elif field_override is not None:
+            final = str(field_override).replace("\r\n", "\n").strip()
+            source = "field"
         else:
             final = slot.value
             source = "proposed"
@@ -165,6 +173,25 @@ def tailor_document(posting: str, docx_bytes: bytes, profile: dict | None = None
         "keywords": keywords_payload(keywords),
     }
     return buffer.getvalue(), report
+
+
+def tailor_cover_letter(posting: str, docx_bytes: bytes | None = None,
+                        target_role: str | None = None,
+                        target_organization: str | None = None,
+                        profile: dict | None = None, library: list | None = None,
+                        values: dict | None = None) -> tuple[bytes, dict]:
+    """Cover-letter convenience over tailor_document: falls back to the bundled
+    template when none is supplied, and expands target_role/target_organization
+    across every {{TARGET_ROLE}}/{{TARGET_ORGANIZATION}} occurrence."""
+    if docx_bytes is None:
+        docx_bytes = DEFAULT_COVER_LETTER_TEMPLATE.read_bytes()
+    field_values = {}
+    if target_role is not None:
+        field_values["TARGET_ROLE"] = str(target_role)
+    if target_organization is not None:
+        field_values["TARGET_ORGANIZATION"] = str(target_organization)
+    return tailor_document(posting, docx_bytes, profile=profile, library=library,
+                           values=values, field_values=field_values or None)
 
 
 def keywords_payload(keywords: list[Keyword]) -> dict[str, list[dict]]:

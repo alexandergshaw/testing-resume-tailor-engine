@@ -19,8 +19,9 @@ from flask import Blueprint, jsonify, request, send_file
 from .. import __version__
 from ..library.store import (add_entry, auto_tags, delete_entry, load_library,
                              load_profile, save_profile, update_entry)
+from ..paths import DEFAULT_RESUME_TEMPLATE
 from ..service import (InvalidInputError, ServiceError, keywords_payload,
-                       propose_for, tailor_document)
+                       propose_for, tailor_cover_letter, tailor_document)
 
 api = Blueprint("api", __name__, url_prefix="/api/v1")
 
@@ -73,31 +74,38 @@ def _json_field(raw: str | None, field: str):
         raise InvalidInputError(f"'{field}' is not valid JSON: {exc}") from exc
 
 
-def _read_inputs() -> dict:
+def _read_inputs(require_template: bool = True) -> dict:
+    """Parse multipart or JSON request bodies. When `require_template` is False
+    (cover-letter endpoint), an absent template yields docx_bytes=None so the
+    caller can fall back to a bundled default."""
     content_type = request.content_type or ""
     if "multipart/form-data" in content_type:
         upload = request.files.get("template")
-        if upload is None:
+        if upload is None and require_template:
             raise InvalidInputError("missing 'template' file part")
         return {
             "posting": request.form.get("posting", ""),
-            "docx_bytes": upload.read(),
+            "docx_bytes": upload.read() if upload is not None else None,
             "values": _json_field(request.form.get("values"), "values"),
             "profile": _json_field(request.form.get("profile"), "profile"),
             "library": _json_field(request.form.get("library"), "library"),
             "remember": _json_field(request.form.get("remember"), "remember"),
+            "target_role": request.form.get("target_role"),
+            "target_organization": request.form.get("target_organization"),
         }
     if request.is_json:
         body = request.get_json(silent=True)
         if not isinstance(body, dict):
             raise InvalidInputError("request body must be a JSON object")
         template_b64 = body.get("template_b64")
-        if not template_b64:
+        if not template_b64 and require_template:
             raise InvalidInputError("missing 'template_b64' (base64-encoded .docx)")
-        try:
-            docx_bytes = base64.b64decode(template_b64, validate=True)
-        except Exception as exc:
-            raise InvalidInputError(f"'template_b64' is not valid base64: {exc}") from exc
+        docx_bytes = None
+        if template_b64:
+            try:
+                docx_bytes = base64.b64decode(template_b64, validate=True)
+            except Exception as exc:
+                raise InvalidInputError(f"'template_b64' is not valid base64: {exc}") from exc
         return {
             "posting": body.get("posting", ""),
             "docx_bytes": docx_bytes,
@@ -105,14 +113,23 @@ def _read_inputs() -> dict:
             "profile": body.get("profile"),
             "library": body.get("library"),
             "remember": body.get("remember"),
+            "target_role": body.get("target_role"),
+            "target_organization": body.get("target_organization"),
         }
     raise InvalidInputError("send multipart/form-data or application/json")
 
 
+def _resume_template(inputs: dict) -> bytes:
+    """Uploaded template if present, else the bundled standardized resume."""
+    if inputs["docx_bytes"] is not None:
+        return inputs["docx_bytes"]
+    return DEFAULT_RESUME_TEMPLATE.read_bytes()
+
+
 @api.post("/proposals")
 def proposals():
-    inputs = _read_inputs()
-    slots, keywords = propose_for(inputs["posting"], inputs["docx_bytes"],
+    inputs = _read_inputs(require_template=False)
+    slots, keywords = propose_for(inputs["posting"], _resume_template(inputs),
                                   inputs["profile"], inputs["library"])
     return jsonify(
         engine_version=__version__,
@@ -121,17 +138,9 @@ def proposals():
     )
 
 
-@api.post("/tailor")
-def tailor():
-    inputs = _read_inputs()
-    docx_bytes, report = tailor_document(
-        inputs["posting"], inputs["docx_bytes"],
-        inputs["profile"], inputs["library"], inputs["values"])
-
-    remembered = _remember(inputs.get("remember"), report)
-    if remembered:
-        report["remembered"] = remembered
-
+def _docx_response(docx_bytes: bytes, report: dict, download_name: str):
+    """Either the binary docx (default) or {docx_b64, report} when the caller
+    sends Accept: application/json."""
     if "application/json" in (request.headers.get("Accept") or ""):
         return jsonify(
             engine_version=__version__,
@@ -139,12 +148,41 @@ def tailor():
             report=report,
         )
     response = send_file(io.BytesIO(docx_bytes), as_attachment=True,
-                         download_name="Tailored Resume.docx",
+                         download_name=download_name,
                          mimetype=("application/vnd.openxmlformats-officedocument"
                                    ".wordprocessingml.document"))
     response.headers["X-Engine-Version"] = __version__
     response.headers["X-Unfilled-Count"] = str(len(report["unfilled"]))
     return response
+
+
+@api.post("/tailor")
+def tailor():
+    inputs = _read_inputs(require_template=False)
+    docx_bytes, report = tailor_document(
+        inputs["posting"], _resume_template(inputs),
+        inputs["profile"], inputs["library"], inputs["values"])
+
+    remembered = _remember(inputs.get("remember"), report)
+    if remembered:
+        report["remembered"] = remembered
+    return _docx_response(docx_bytes, report, "Tailored Resume.docx")
+
+
+@api.post("/cover-letter")
+def cover_letter():
+    inputs = _read_inputs(require_template=False)
+    docx_bytes, report = tailor_cover_letter(
+        inputs["posting"], inputs["docx_bytes"],
+        target_role=inputs.get("target_role"),
+        target_organization=inputs.get("target_organization"),
+        profile=inputs["profile"], library=inputs["library"],
+        values=inputs["values"])
+
+    remembered = _remember(inputs.get("remember"), report)
+    if remembered:
+        report["remembered"] = remembered
+    return _docx_response(docx_bytes, report, "Cover Letter.docx")
 
 
 def _remember(keys, report) -> list[str]:

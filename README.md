@@ -33,8 +33,9 @@ use them as a live tester; each page has a request/response log panel and a copy
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /api/v1/proposals` | Scan the template + parse the posting; returns every slot with its proposed value, strategy, note, and ranked bank candidates, plus extracted keywords. |
-| `POST /api/v1/tailor` | Same inputs + optional `values` overrides; returns the tailored docx (binary by default, JSON+base64 with `Accept: application/json`). Optional `remember` list persists values to the bank (local only). |
+| `POST /api/v1/proposals` | Scan the template + parse the posting; returns every slot with its proposed value, strategy, note, and ranked bank candidates, plus extracted keywords. `template` is **optional** — omit it to use the bundled `data/resume_template.docx`. |
+| `POST /api/v1/tailor` | Same inputs + optional `values` overrides; returns the tailored docx (binary by default, JSON+base64 with `Accept: application/json`). `template` optional (bundled default). Optional `remember` list persists values to the bank (local only). |
+| `POST /api/v1/cover-letter` | Tailors a cover letter. `template` is **optional** — omit it to use the bundled `data/cover_letter_template.docx`. Adds `target_role` / `target_organization` fields that fill every `{{TARGET_ROLE}}` / `{{TARGET_ORGANIZATION}}` occurrence. Same output modes, overrides, and `remember` as `/tailor`; downloads as `Cover Letter.docx`. |
 | `GET /api/v1/bank` / `POST /api/v1/bank/entries` / `PUT,DELETE /api/v1/bank/entries/<id>` / `POST /api/v1/bank/profile` | Insertion bank CRUD (disabled when read-only). |
 | `GET /api/v1/health` | Version, read-only flag, bank size. |
 
@@ -67,7 +68,21 @@ curl -X POST https://<deployment>/api/v1/tailor \
   -F "template=@Template Resume.docx" \
   -F 'values={"MEASURABLE_IMPACT::0": "a 70% reduction in deployment time"}' \
   -o "Tailored Resume.docx"
+
+# Cover letter from the bundled template (no file needed)
+curl -X POST https://<deployment>/api/v1/cover-letter \
+  -H "X-API-Key: $KEY" \
+  -F "posting=<posting text>" \
+  -F "target_role=Digital Content Director" \
+  -F "target_organization=Franklin & Marshall College" \
+  -o "Cover Letter.docx"
 ```
+
+The bundled cover-letter template lives at `data/cover_letter_template.docx`; regenerate it
+from `scripts/build_cover_letter_template.py` after editing the wording. The bundled resume
+template is `data/resume_template.docx`; re-standardize any resume's placeholder casing with
+`python scripts/standardize_resume_template.py <source.docx>` (rewrites every placeholder to
+consistent `{{UPPER_SNAKE_CASE}}`, preserving formatting).
 
 Errors are consistent JSON: `{"error": "...", "detail": "..."}` with 400 (bad input/docx),
 401 (bad API key), 403 (write attempted on read-only deployment), 422 (no placeholders found).
