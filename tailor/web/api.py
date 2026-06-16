@@ -149,7 +149,8 @@ def proposals():
     return jsonify(
         engine_version=__version__,
         workflow=workflow,
-        meta={k: meta[k] for k in ("degraded", "reason", "parser_version") if k in meta},
+        meta={k: meta[k] for k in
+              ("degraded", "reason", "parser_version", "low_confidence") if k in meta},
         slots=[slot.to_dict() for slot in slots],
         keywords=keywords_payload(keywords),
         research=research,
@@ -240,6 +241,8 @@ def _workflow_meta(workflow: str, meta: dict) -> dict:
         out["reason"] = meta["reason"]
     if meta.get("parser_version"):
         out["parser_version"] = meta["parser_version"]
+    if meta.get("low_confidence"):
+        out["low_confidence"] = True
     return out
 
 

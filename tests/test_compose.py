@@ -10,12 +10,15 @@ from tests.test_service import POSTING, TEMPLATE
 def test_classification_uses_canonical_casing_and_categories():
     keywords, emphases = keywords_from_parser(PARSE_FIXTURE)
     by_name = {k.canonical: k.category for k in keywords}
-    assert "CI/CD" in by_name and by_name["CI/CD"] == "methodology"
+    # Canonical casing + categories from both the keywords and technologies lenses.
     assert by_name["ETL"] == "technology"
+    assert by_name["Spark"] == "technology"
+    assert by_name["AWS"] == "tool_platform"
     assert by_name["Kubernetes"] == "tool_platform"
-    # Unknown term is classified (not dropped): falls back via emphasis -> domain.
-    assert "Support Data Platforms" in by_name
+    # Unknown RAKE phrase is classified (not dropped): falls back to domain.
+    assert by_name["Build scalable Data pipelines"] == "domain"
     assert emphases["primary"]["id"] == "data_science"
+    assert emphases["secondary"]["id"] == "software_industry"
 
 
 def test_classify_unknown_falls_back_to_domain():
@@ -35,7 +38,8 @@ def test_get_keywords_composed_uses_parser():
     keywords, meta = get_keywords(POSTING, "composed", parser)
     assert parser.calls == 1
     assert meta["degraded"] is False
-    assert "CI/CD" in {k.canonical for k in keywords}
+    assert meta["parser_version"] == "1.0.0"
+    assert {"ETL", "Spark", "AWS"} <= {k.canonical for k in keywords}
 
 
 def test_get_keywords_composed_falls_back_on_parser_error():
@@ -60,7 +64,9 @@ def test_research_suggestions_one_batch_per_emphasis():
     suggestions, warnings = research_suggestions(emphases, researcher)
     assert researcher.batch_calls == 1
     # one request per distinct emphasis label, not per keyword
-    assert len(researcher.last_requests) == 2
+    # (field.top + sector.top + field.ranked, deduped: Data Science, Software
+    # Industry, DevOps & Cloud Infrastructure)
+    assert len(researcher.last_requests) == 3
     assert all(r["intent"] == "concept.overview" for r in researcher.last_requests)
     assert suggestions and suggestions[0]["attribution_required"] is True
 

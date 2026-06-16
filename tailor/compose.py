@@ -36,8 +36,10 @@ def get_keywords(posting: str, workflow: str, parser_client=None
                 "workflow": "composed", "degraded": True,
                 "reason": "parser returned no keywords; used local extraction",
                 "emphases": emphases}
+        primary = emphases.get("primary")
         return keywords, {"workflow": "composed", "degraded": False,
                           "emphases": emphases,
+                          "low_confidence": bool(primary and primary.get("low_confidence")),
                           "parser_version": parse.get("meta", {}).get("version")}
     except DownstreamError as exc:
         return extract_keywords(posting), {

@@ -53,11 +53,15 @@ folded into `values`) and is real, attributed content only on the cover-letter p
 
 ## Downstream contracts
 
-- **Parser API** (`/api/parse`): emphases + keywords with `display` (canonical casing) and
-  `related_emphasis_id`. The composer classifies each keyword into its skill category
-  (technology/tool_platform/methodology/soft_skill/certification/domain) using the local
-  taxonomy as a classification lexicon — that classification is résumé-specific and stays
-  here, not in the Parser.
+- **Parser API** (`/api/parse`, v1.0.0, lens-based): the composer requests
+  `targets=[field, sector, technologies, keywords]` and reads `results.<lens>`. Keywords
+  come from both the `keywords` lens (RAKE/lexicon, real scores) and the `technologies`
+  lexicon (curated tech terms, assigned a descending synthetic score), merged and
+  deduped by canonical `display` casing. `results.field.top` / `results.sector.top` seed
+  the emphasis-driven research; `field.top.low_confidence` surfaces in `meta`. The composer
+  classifies each keyword into its skill category (technology/tool_platform/methodology/
+  soft_skill/certification/domain) using the local taxonomy — that classification is
+  résumé-specific and stays here, not in the Parser.
 - **Researcher API** (`/v1/research/batch`): called once per request, one entry per
   emphasis (résumé) or for company/role (cover letter). Honors `sources[].license` via the
   provided `attribution` strings.

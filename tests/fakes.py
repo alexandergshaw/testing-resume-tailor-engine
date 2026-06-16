@@ -1,28 +1,50 @@
 """In-memory fakes for the downstream clients (no network in tests)."""
 import json
 
+# Parser API v1.0.0 lens-based response.
 PARSE_FIXTURE = {
-    "primary": {"id": "data_science", "label": "Data Science", "type": "field",
-                "score": 0.68, "matched_terms": []},
-    "secondary": {"id": "software_industry", "label": "Software Industry",
-                  "type": "sector", "score": 0.23, "matched_terms": []},
-    "emphases": [
-        {"id": "data_science", "label": "Data Science", "type": "field", "score": 0.68},
-        {"id": "software_industry", "label": "Software Industry", "type": "sector",
-         "score": 0.23},
-    ],
-    "keywords": [
-        {"term": "etl", "display": "ETL", "score": 1.0, "source": "lexicon",
-         "related_emphasis": "Data Science", "related_emphasis_id": "data_science"},
-        {"term": "cicd", "display": "CI/CD", "score": 0.9, "source": "rake+lexicon",
-         "related_emphasis": "Software Industry", "related_emphasis_id": "software_industry"},
-        {"term": "kubernetes", "display": "Kubernetes", "score": 0.8, "source": "lexicon",
-         "related_emphasis": "DevOps", "related_emphasis_id": "devops"},
-        {"term": "support data platforms", "display": "Support Data Platforms",
-         "score": 0.5, "source": "rake", "related_emphasis": "Data Science",
-         "related_emphasis_id": "data_science"},
-    ],
-    "meta": {"version": "0.3.0"},
+    "results": {
+        "field": {
+            "kind": "emphasis",
+            "top": {"id": "data_science", "label": "Data Science", "score": 0.8802,
+                    "matched_terms": ["ETL", "Spark"], "low_confidence": False},
+            "ranked": [
+                {"id": "data_science", "label": "Data Science", "score": 0.8802,
+                 "matched_terms": ["ETL", "Spark"]},
+                {"id": "devops", "label": "DevOps & Cloud Infrastructure",
+                 "score": 0.1198, "matched_terms": ["AWS"]},
+            ],
+        },
+        "sector": {
+            "kind": "emphasis",
+            "top": {"id": "software_industry", "label": "Software Industry",
+                    "score": 1.0, "matched_terms": ["agile"], "low_confidence": False},
+            "ranked": [{"id": "software_industry", "label": "Software Industry",
+                        "score": 1.0, "matched_terms": ["agile"]}],
+        },
+        "technologies": {
+            "kind": "lexicon",
+            "matched": [
+                {"term": "spark", "display": "Spark",
+                 "related": {"id": "data_science", "label": "Data Science"}},
+                {"term": "aws", "display": "AWS",
+                 "related": {"id": "devops", "label": "DevOps & Cloud Infrastructure"}},
+                {"term": "kubernetes", "display": "Kubernetes",
+                 "related": {"id": "devops", "label": "DevOps & Cloud Infrastructure"}},
+            ],
+        },
+        "keywords": {
+            "kind": "keywords",
+            "items": [
+                {"term": "etl", "display": "ETL", "score": 1.0, "source": "rake+lexicon",
+                 "related": {"id": "data_science", "label": "Data Science"}},
+                {"term": "build scalable data pipelines",
+                 "display": "Build scalable Data pipelines", "score": 0.9, "source": "rake",
+                 "related": {"id": "data_science", "label": "Data Science"}},
+            ],
+        },
+    },
+    "meta": {"token_count": 26, "version": "1.0.0"},
 }
 
 
