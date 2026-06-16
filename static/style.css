@@ -68,6 +68,35 @@ h3 { font-size: 13px; text-transform: capitalize; color: var(--muted); margin: 1
 .hint { color: var(--muted); font-size: 14px; margin-top: 0; }
 
 label { display: block; font-weight: 600; margin: 16px 0 6px; }
+.field-label { display: block; font-weight: 600; margin: 16px 0 6px; }
+
+/* Workflow toggle (segmented control) */
+.workflow-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.wf-option { margin: 0; font-weight: 400; }
+.wf-option input { position: absolute; opacity: 0; pointer-events: none; }
+.wf-option span {
+  display: flex; flex-direction: column; gap: 2px; padding: 9px 18px;
+  cursor: pointer; font-size: 14px; font-weight: 600; color: var(--muted);
+  background: var(--card); transition: background 0.12s, color 0.12s;
+}
+.wf-option span small { font-weight: 400; font-size: 11px; opacity: 0.85; }
+.wf-option + .wf-option span { border-left: 1px solid var(--line); }
+.wf-option input:checked + span { background: var(--accent); color: #fff; }
+.wf-option input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.wf-pill {
+  display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; border-radius: 10px; padding: 2px 9px; color: #fff;
+  background: var(--muted); margin-right: 6px;
+}
+.wf-pill.wf-composed { background: #0e7490; }
+.wf-pill.wf-legacy { background: #6c4fc4; }
+
+#research-panel { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
+.research-item { margin-bottom: 12px; }
+.research-emphasis { font-weight: 600; font-size: 13.5px; }
+.research-summary { font-size: 13px; color: var(--ink); }
+.research-source { font-size: 11px; color: var(--muted); margin-top: 2px; }
 textarea, input[type="file"] {
   width: 100%;
   font: inherit;

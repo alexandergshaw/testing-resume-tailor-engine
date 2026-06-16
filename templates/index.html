@@ -6,6 +6,21 @@
   <code>POST /proposals</code> to review, <code>POST /tailor</code> to download.</p>
 
   <form id="proposals-form">
+    <span class="field-label">Workflow</span>
+    <div class="workflow-toggle" role="radiogroup" aria-label="Generation workflow">
+      <label class="wf-option">
+        <input type="radio" name="workflow" value="legacy" checked>
+        <span>Legacy engine<small>local · deterministic</small></span>
+      </label>
+      <label class="wf-option">
+        <input type="radio" name="workflow" value="composed">
+        <span>New APIs<small>Parser + Researcher</small></span>
+      </label>
+    </div>
+    <p class="hint">Legacy uses the original in-process engine. New APIs route extraction
+    through the Parser (with research context); it falls back to local extraction if the
+    Parser is unavailable.</p>
+
     <label for="posting">Job posting</label>
     <textarea id="posting" rows="14" placeholder="Paste the full job posting here…" required></textarea>
 
@@ -37,6 +52,7 @@
     <h2>Extracted keywords</h2>
     <p class="hint">Copy-paste fodder, grouped by category.</p>
     <div id="keyword-groups"></div>
+    <div id="research-panel" hidden></div>
   </aside>
 </section>
 

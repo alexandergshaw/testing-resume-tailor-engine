@@ -1,10 +1,17 @@
 // Tailor page: a pure client of /api/v1 — the same calls external apps make.
 let templateFile = null;
 let lastProposals = null;
+// The workflow that produced the current review; /tailor reuses it so the
+// downloaded doc matches the slots on screen even if the toggle changes after.
+let activeWorkflow = "legacy";
 const READONLY = document.body.dataset.readonly === "1";
+
+const selectedWorkflow = () =>
+  document.querySelector('input[name="workflow"]:checked').value;
 
 const summarizeRequest = (extraFields = {}) => {
   const lines = [
+    `workflow: ${activeWorkflow}`,
     `posting: ${$("#posting").value.length} chars`,
     `template: ${templateFile ? `${templateFile.name} (${templateFile.size} bytes)` : "bundled default"}`,
   ];
@@ -18,6 +25,7 @@ const summarizeRequest = (extraFields = {}) => {
 const buildFormData = () => {
   const fd = new FormData();
   fd.append("posting", $("#posting").value);
+  fd.append("workflow", activeWorkflow);
   if (templateFile) fd.append("template", templateFile);  // omit -> bundled default
   return fd;
 };
@@ -25,6 +33,7 @@ const buildFormData = () => {
 $("#proposals-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   templateFile = $("#template").files[0] || null;
+  activeWorkflow = selectedWorkflow();
   $("#proposals-btn").disabled = true;
   try {
     const res = await fetch("/api/v1/proposals", {
@@ -75,10 +84,16 @@ function renderReview(data) {
   $("#review-rows").innerHTML = rows;
 
   const manual = data.slots.filter((s) => !s.value).length;
-  $("#review-summary").textContent =
+  const wfLabel = data.workflow === "composed" ? "New APIs (composed)" : "Legacy engine";
+  $("#review-summary").innerHTML =
+    `<span class="wf-pill wf-${escapeHtml(data.workflow || "legacy")}">${wfLabel}</span> ` +
     `${data.slots.length} placeholders found` +
     (manual ? `, ${manual} need your input` : "") +
     ". Blank fields keep their placeholder in the document.";
+  if (data.meta && data.meta.degraded) {
+    flash(`New APIs unavailable — fell back to the legacy engine` +
+          (data.meta.reason ? ` (${data.meta.reason})` : "."), true);
+  }
 
   $("#keyword-groups").innerHTML = Object.entries(data.keywords).map(
     ([category, kws]) => `<h3>${escapeHtml(category.replace(/_/g, " "))}</h3>
@@ -86,6 +101,8 @@ function renderReview(data) {
         `<li><span class="kw">${escapeHtml(kw.canonical)}</span>` +
         `<span class="score" title="score ${kw.score}">${kw.count}×</span></li>`).join("")}
       </ul>`).join("");
+
+  renderResearch(data.research || []);
 
   document.querySelectorAll(".bank-picker").forEach((picker) => {
     picker.addEventListener("change", () => {
@@ -99,6 +116,26 @@ function renderReview(data) {
 
   $("#review").hidden = false;
   $("#review").scrollIntoView({ behavior: "smooth" });
+}
+
+// Advisory research context (composed workflow only) — never auto-inserted.
+function renderResearch(research) {
+  const panel = $("#research-panel");
+  if (!panel) return;
+  if (!research.length) { panel.hidden = true; panel.innerHTML = ""; return; }
+  panel.hidden = false;
+  panel.innerHTML = "<h2>Research context</h2>" +
+    `<p class="hint">Advisory only — from the Researcher API. Copy in what's useful;
+     nothing here is auto-inserted.</p>` +
+    research.map((item) => {
+      const sources = (item.sources || [])
+        .map((s) => escapeHtml(s.attribution || s.name || s.url || "")).join("; ");
+      return `<div class="research-item">
+        <div class="research-emphasis">${escapeHtml(item.emphasis || "")}</div>
+        <div class="research-summary">${escapeHtml(item.summary || "")}</div>
+        ${sources ? `<div class="research-source">${sources}</div>` : ""}
+      </div>`;
+    }).join("");
 }
 
 $("#tailor-btn").addEventListener("click", async () => {
