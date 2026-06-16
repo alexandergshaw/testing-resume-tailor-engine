@@ -61,10 +61,13 @@ folded into `values`) and is real, attributed content only on the cover-letter p
 - **Researcher API** (`/v1/research/batch`): called once per request, one entry per
   emphasis (résumé) or for company/role (cover letter). Honors `sources[].license` via the
   provided `attribution` strings.
-- **Document Generator API** (`/api/generate`): used only for non-docx exports
-  (pdf/html/txt). Résumé/cover-letter `.docx` is filled locally by `tailor.docxio.filler`
-  because Jinja can't fill repeated identical placeholders (`{{SKILLS_LINE}}` ×5) with
-  distinct values.
+- **Document Generator API** (`/api/generate`): in the composed workflow the final `.docx`
+  is rendered here. Because Jinja can't fill repeated identical placeholders
+  (`{{SKILLS_LINE}}` ×5) with distinct values, the composer first rewrites each occurrence
+  to a unique variable (`{{SKILLS_LINE__0}}`…) and sends a flat content map
+  (`tailor.docxio.generator_render`). If the Generator is unavailable it falls back to the
+  local filler (`report.meta.renderer` = `generator` | `local`). Legacy always renders
+  locally.
 
 ## Failure / degradation matrix
 
@@ -72,7 +75,7 @@ folded into `values`) and is real, attributed content only on the cover-letter p
 |---|---|---|
 | Parser | unconfigured / unreachable / no keywords | composed → local extraction, `meta.degraded=true` + reason |
 | Researcher | unconfigured / down / degraded / 501 / 502 | résumé unaffected (advisory); cover letter still generates, `report.warnings` set |
-| Generator | down | only non-docx exports affected; docx path uses local filler |
+| Generator | unconfigured / down | composed renders the docx locally instead (`report.meta.renderer=local`, warning on outage); legacy always local |
 
 ## Rollout
 

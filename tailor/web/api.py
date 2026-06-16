@@ -181,10 +181,12 @@ def tailor():
     workflow = resolve_workflow(inputs.get("workflow"))
     # Research is NEVER used here — resume output stays deterministic.
     keywords, meta = get_keywords(inputs["posting"], workflow, get_parser_client())
+    generator = get_generator_client() if workflow == "composed" else None
     docx_bytes, report = tailor_document(
         inputs["posting"], _resume_template(inputs),
-        inputs["profile"], inputs["library"], inputs["values"], keywords=keywords)
-    report["meta"] = _workflow_meta(workflow, meta)
+        inputs["profile"], inputs["library"], inputs["values"], keywords=keywords,
+        generator_client=generator)
+    report.setdefault("meta", {}).update(_workflow_meta(workflow, meta))
 
     remembered = _remember(inputs.get("remember"), report)
     if remembered:
@@ -197,13 +199,14 @@ def cover_letter():
     inputs = _read_inputs(require_template=False)
     workflow = resolve_workflow(inputs.get("workflow"))
     keywords, meta = get_keywords(inputs["posting"], workflow, get_parser_client())
+    generator = get_generator_client() if workflow == "composed" else None
     docx_bytes, report = tailor_cover_letter(
         inputs["posting"], inputs["docx_bytes"],
         target_role=inputs.get("target_role"),
         target_organization=inputs.get("target_organization"),
         profile=inputs["profile"], library=inputs["library"],
-        values=inputs["values"], keywords=keywords)
-    report["meta"] = _workflow_meta(workflow, meta)
+        values=inputs["values"], keywords=keywords, generator_client=generator)
+    report.setdefault("meta", {}).update(_workflow_meta(workflow, meta))
 
     if workflow == "composed":
         # Real framing content for the target org/role, with attribution.

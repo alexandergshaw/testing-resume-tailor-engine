@@ -178,7 +178,9 @@ $("#tailor-btn").addEventListener("click", async () => {
     URL.revokeObjectURL(link.href);
 
     const saved = data.report.remembered ? data.report.remembered.length : 0;
-    flash(`Downloaded. ${data.report.unfilled.length} slot(s) left unfilled` +
+    const renderer = data.report.meta && data.report.meta.renderer;
+    const via = renderer === "generator" ? " (rendered via Document Generator)" : "";
+    flash(`Downloaded${via}. ${data.report.unfilled.length} slot(s) left unfilled` +
           (saved ? `; ${saved} value(s) saved to bank.` : "."));
   } catch (err) {
     flash(`Request failed: ${err}`, true);

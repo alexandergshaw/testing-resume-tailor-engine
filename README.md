@@ -34,9 +34,11 @@ the `DEFAULT_WORKFLOW` env var (default `legacy` during integration):
 - **legacy** — the original fully-local, deterministic engine (local taxonomy + RAKE). No
   downstream services required.
 - **composed** — extraction via the Parser API (canonical casing + emphases, classified
-  locally into skill categories), advisory research via the Researcher API. Falls back to
-  local extraction if the Parser is unavailable. Research never enters résumé output
-  (deterministic); on the cover-letter path it adds attributed company/role framing.
+  locally into skill categories), advisory research via the Researcher API, and final
+  `.docx` rendering via the Document Generator API (the composer rewrites repeated
+  placeholders to unique variables so the generic Jinja renderer can fill them). Each step
+  falls back to the local path if its service is unavailable. Research never enters résumé
+  output (deterministic); on the cover-letter path it adds attributed company/role framing.
 
 `POST /api/v1/compare` runs both on identical inputs and returns a per-slot diff — the tool
 for shaking out composed-path bugs against the legacy baseline. See

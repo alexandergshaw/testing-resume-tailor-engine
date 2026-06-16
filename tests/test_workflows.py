@@ -8,7 +8,7 @@ import pytest
 import tailor.web.api as api
 from app import create_app
 from tailor.clients.base import DownstreamError
-from tests.fakes import FakeParser, FakeResearcher
+from tests.fakes import FakeGenerator, FakeParser, FakeResearcher
 from tests.test_service import POSTING, TEMPLATE
 
 
@@ -25,9 +25,10 @@ def multipart(**extra):
     return {"data": data, "content_type": "multipart/form-data"}
 
 
-def use_fakes(monkeypatch, parser=None, researcher=None):
+def use_fakes(monkeypatch, parser=None, researcher=None, generator=None):
     monkeypatch.setattr(api, "get_parser_client", lambda: parser)
     monkeypatch.setattr(api, "get_researcher_client", lambda: researcher)
+    monkeypatch.setattr(api, "get_generator_client", lambda: generator)
 
 
 def test_default_workflow_is_legacy(client, monkeypatch):
@@ -75,6 +76,35 @@ def test_tailor_composed_does_not_depend_on_researcher(client, monkeypatch):
     res = client.post("/api/v1/tailor", **multipart(workflow="composed"))
     assert res.status_code == 200
     assert res.data[:2] == b"PK"
+
+
+def test_composed_renders_via_generator(client, monkeypatch):
+    generator = FakeGenerator()
+    use_fakes(monkeypatch, parser=FakeParser(), generator=generator)
+    res = client.post("/api/v1/tailor", headers={"Accept": "application/json"},
+                      **multipart(workflow="composed"))
+    assert res.status_code == 200
+    assert generator.calls and generator.calls[0]["document_type"] == "docx"
+    assert res.get_json()["report"]["meta"]["renderer"] == "generator"
+
+
+def test_legacy_never_calls_generator(client, monkeypatch):
+    generator = FakeGenerator()
+    use_fakes(monkeypatch, parser=FakeParser(), generator=generator)
+    res = client.post("/api/v1/tailor", headers={"Accept": "application/json"},
+                      **multipart(workflow="legacy"))
+    assert generator.calls == []
+    assert res.get_json()["report"]["meta"]["renderer"] == "local"
+
+
+def test_composed_generator_outage_falls_back(client, monkeypatch):
+    generator = FakeGenerator(error=DownstreamError("generator", "down"))
+    use_fakes(monkeypatch, parser=FakeParser(), generator=generator)
+    res = client.post("/api/v1/tailor", headers={"Accept": "application/json"},
+                      **multipart(workflow="composed"))
+    report = res.get_json()["report"]
+    assert report["meta"]["renderer"] == "local"
+    assert any("generator unavailable" in w for w in report.get("warnings", []))
 
 
 def test_unknown_workflow_is_400(client, monkeypatch):

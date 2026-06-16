@@ -1,4 +1,5 @@
 """In-memory fakes for the downstream clients (no network in tests)."""
+import json
 
 PARSE_FIXTURE = {
     "primary": {"id": "data_science", "label": "Data Science", "type": "field",
@@ -69,3 +70,28 @@ class FakeResearcher:
 
     def health(self):
         return {"status": "ok", "version": "1.0.0"}
+
+
+class FakeGenerator:
+    """Records the generate() call; returns a sentinel docx-ish blob unless
+    configured to fail."""
+
+    def __init__(self, error=None, output=b"PK\x03\x04fake-generated-docx"):
+        self.error = error
+        self.output = output
+        self.calls = []
+
+    def generate(self, document_type, content_json, *, template_text=None,
+                 template_file=None, filename=None, strict=None):
+        self.calls.append({
+            "document_type": document_type,
+            "content": json.loads(content_json),
+            "has_file": template_file is not None,
+            "strict": strict,
+        })
+        if self.error:
+            raise self.error
+        return self.output
+
+    def health(self):
+        return {"version": "1.0.0"}

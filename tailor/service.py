@@ -9,7 +9,9 @@ from dataclasses import dataclass
 
 import docx
 
+from .clients.base import DownstreamError
 from .docxio.filler import fill
+from .docxio.generator_render import DOCX_MIME, prepare_for_generator
 from .docxio.scanner import scan
 from .extraction.extractor import Keyword, extract_keywords
 from .library.store import LibraryEntry, load_library, load_profile, slugify
@@ -134,16 +136,37 @@ def propose_for(posting: str, docx_bytes: bytes, profile: dict | None = None,
     return slots, keywords
 
 
+def _render_local(docx_bytes: bytes, fill_values: dict[tuple[str, int], str]) -> bytes:
+    document = _open_document(docx_bytes)
+    fill(document, fill_values)
+    buffer = io.BytesIO()
+    document.save(buffer)
+    return buffer.getvalue()
+
+
+def _render_via_generator(docx_bytes: bytes, fill_values: dict[tuple[str, int], str],
+                          generator_client) -> bytes:
+    import json
+    template_bytes, content = prepare_for_generator(docx_bytes, fill_values)
+    return generator_client.generate(
+        "docx", json.dumps(content),
+        template_file=("resume.docx", template_bytes, DOCX_MIME), strict=False)
+
+
 def tailor_document(posting: str, docx_bytes: bytes, profile: dict | None = None,
                     library: list | None = None, values: dict | None = None,
                     field_values: dict | None = None,
-                    keywords: list[Keyword] | None = None) -> tuple[bytes, dict]:
+                    keywords: list[Keyword] | None = None,
+                    generator_client=None) -> tuple[bytes, dict]:
     """Fill the template. `values` maps slot key ("NAME::occ") -> final text;
     `field_values` maps a placeholder NAME -> text applied to ALL its
     occurrences (handy for per-applicant fields like TARGET_ORGANIZATION that
     repeat). Precedence per slot: values > field_values > proposal. An empty
     result leaves the {{placeholder}} in the document and is reported unfilled.
-    `keywords` injects a precomputed keyword set (composed workflow)."""
+    `keywords` injects a precomputed keyword set (composed workflow).
+    `generator_client`, when given, renders the final docx via the Document
+    Generator API (composed workflow), falling back to the local filler if it
+    is unavailable."""
     if values is not None and not isinstance(values, dict):
         raise InvalidInputError("'values' must be an object of slot key -> text")
     if field_values is not None and not isinstance(field_values, dict):
@@ -170,17 +193,24 @@ def tailor_document(posting: str, docx_bytes: bytes, profile: dict | None = None
             source = "unfilled"
         report_slots.append({**slot.to_dict(), "final_value": final, "source": source})
 
-    document = _open_document(docx_bytes)
-    fill(document, fill_values)
-    buffer = io.BytesIO()
-    document.save(buffer)
-
     report = {
         "slots": report_slots,
         "unfilled": [s["key"] for s in report_slots if s["source"] == "unfilled"],
         "keywords": keywords_payload(keywords),
     }
-    return buffer.getvalue(), report
+
+    rendered, renderer = None, "local"
+    if generator_client is not None:
+        try:
+            rendered = _render_via_generator(docx_bytes, fill_values, generator_client)
+            renderer = "generator"
+        except DownstreamError as exc:
+            report.setdefault("warnings", []).append(
+                f"generator unavailable ({exc}); rendered locally")
+    if rendered is None:
+        rendered = _render_local(docx_bytes, fill_values)
+    report.setdefault("meta", {})["renderer"] = renderer
+    return rendered, report
 
 
 def tailor_cover_letter(posting: str, docx_bytes: bytes | None = None,
@@ -188,7 +218,8 @@ def tailor_cover_letter(posting: str, docx_bytes: bytes | None = None,
                         target_organization: str | None = None,
                         profile: dict | None = None, library: list | None = None,
                         values: dict | None = None,
-                        keywords: list[Keyword] | None = None) -> tuple[bytes, dict]:
+                        keywords: list[Keyword] | None = None,
+                        generator_client=None) -> tuple[bytes, dict]:
     """Cover-letter convenience over tailor_document: falls back to the bundled
     template when none is supplied, and expands target_role/target_organization
     across every {{TARGET_ROLE}}/{{TARGET_ORGANIZATION}} occurrence."""
@@ -201,7 +232,7 @@ def tailor_cover_letter(posting: str, docx_bytes: bytes | None = None,
         field_values["TARGET_ORGANIZATION"] = str(target_organization)
     return tailor_document(posting, docx_bytes, profile=profile, library=library,
                            values=values, field_values=field_values or None,
-                           keywords=keywords)
+                           keywords=keywords, generator_client=generator_client)
 
 
 def keywords_payload(keywords: list[Keyword]) -> dict[str, list[dict]]:
