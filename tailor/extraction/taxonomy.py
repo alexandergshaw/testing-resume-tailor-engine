@@ -49,6 +49,12 @@ class Taxonomy:
                         consumed[j] = True
         return matches, consumed
 
+    def classify(self, text: str) -> str | None:
+        """Map a phrase to its skill category via the taxonomy lexicon, or None
+        if unknown. Used by the composed workflow to type Parser keywords."""
+        entry = self._alias_map.get(normalize_phrase(text))
+        return entry.category if entry else None
+
 
 @lru_cache(maxsize=1)
 def default_taxonomy() -> Taxonomy:

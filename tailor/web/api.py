@@ -17,6 +17,11 @@ import os
 from flask import Blueprint, jsonify, request, send_file
 
 from .. import __version__
+from ..clients import (DownstreamError, get_generator_client, get_parser_client,
+                       get_researcher_client)
+from ..compose import (compare_proposals, cover_letter_research, get_keywords,
+                       research_suggestions)
+from ..config import default_workflow, resolve_workflow
 from ..library.store import (add_entry, auto_tags, delete_entry, load_library,
                              load_profile, save_profile, update_entry)
 from ..paths import DEFAULT_RESUME_TEMPLATE
@@ -92,6 +97,7 @@ def _read_inputs(require_template: bool = True) -> dict:
             "remember": _json_field(request.form.get("remember"), "remember"),
             "target_role": request.form.get("target_role"),
             "target_organization": request.form.get("target_organization"),
+            "workflow": request.form.get("workflow"),
         }
     if request.is_json:
         body = request.get_json(silent=True)
@@ -115,6 +121,7 @@ def _read_inputs(require_template: bool = True) -> dict:
             "remember": body.get("remember"),
             "target_role": body.get("target_role"),
             "target_organization": body.get("target_organization"),
+            "workflow": body.get("workflow"),
         }
     raise InvalidInputError("send multipart/form-data or application/json")
 
@@ -129,12 +136,24 @@ def _resume_template(inputs: dict) -> bytes:
 @api.post("/proposals")
 def proposals():
     inputs = _read_inputs(require_template=False)
+    workflow = resolve_workflow(inputs.get("workflow"))
+    keywords, meta = get_keywords(inputs["posting"], workflow, get_parser_client())
     slots, keywords = propose_for(inputs["posting"], _resume_template(inputs),
-                                  inputs["profile"], inputs["library"])
+                                  inputs["profile"], inputs["library"], keywords=keywords)
+
+    research, warnings = [], []
+    if workflow == "composed":
+        # Advisory only — surfaced for the review UI, never folded into values.
+        research, warnings = research_suggestions(meta.get("emphases"),
+                                                   get_researcher_client())
     return jsonify(
         engine_version=__version__,
+        workflow=workflow,
+        meta={k: meta[k] for k in ("degraded", "reason", "parser_version") if k in meta},
         slots=[slot.to_dict() for slot in slots],
         keywords=keywords_payload(keywords),
+        research=research,
+        warnings=warnings,
     )
 
 
@@ -159,9 +178,13 @@ def _docx_response(docx_bytes: bytes, report: dict, download_name: str):
 @api.post("/tailor")
 def tailor():
     inputs = _read_inputs(require_template=False)
+    workflow = resolve_workflow(inputs.get("workflow"))
+    # Research is NEVER used here — resume output stays deterministic.
+    keywords, meta = get_keywords(inputs["posting"], workflow, get_parser_client())
     docx_bytes, report = tailor_document(
         inputs["posting"], _resume_template(inputs),
-        inputs["profile"], inputs["library"], inputs["values"])
+        inputs["profile"], inputs["library"], inputs["values"], keywords=keywords)
+    report["meta"] = _workflow_meta(workflow, meta)
 
     remembered = _remember(inputs.get("remember"), report)
     if remembered:
@@ -172,17 +195,49 @@ def tailor():
 @api.post("/cover-letter")
 def cover_letter():
     inputs = _read_inputs(require_template=False)
+    workflow = resolve_workflow(inputs.get("workflow"))
+    keywords, meta = get_keywords(inputs["posting"], workflow, get_parser_client())
     docx_bytes, report = tailor_cover_letter(
         inputs["posting"], inputs["docx_bytes"],
         target_role=inputs.get("target_role"),
         target_organization=inputs.get("target_organization"),
         profile=inputs["profile"], library=inputs["library"],
-        values=inputs["values"])
+        values=inputs["values"], keywords=keywords)
+    report["meta"] = _workflow_meta(workflow, meta)
+
+    if workflow == "composed":
+        # Real framing content for the target org/role, with attribution.
+        research, warnings = cover_letter_research(
+            inputs.get("target_role"), inputs.get("target_organization"),
+            get_researcher_client())
+        if research:
+            report["research"] = research
+        if warnings:
+            report["warnings"] = warnings
 
     remembered = _remember(inputs.get("remember"), report)
     if remembered:
         report["remembered"] = remembered
     return _docx_response(docx_bytes, report, "Cover Letter.docx")
+
+
+@api.post("/compare")
+def compare():
+    """Run legacy + composed on identical inputs and return a per-slot diff —
+    the integration tool for finding composed bugs against the legacy baseline."""
+    inputs = _read_inputs(require_template=False)
+    diff = compare_proposals(inputs["posting"], _resume_template(inputs),
+                             inputs["profile"], inputs["library"], get_parser_client())
+    return jsonify(engine_version=__version__, **diff)
+
+
+def _workflow_meta(workflow: str, meta: dict) -> dict:
+    out = {"workflow": workflow, "degraded": meta.get("degraded", False)}
+    if meta.get("reason"):
+        out["reason"] = meta["reason"]
+    if meta.get("parser_version"):
+        out["parser_version"] = meta["parser_version"]
+    return out
 
 
 def _remember(keys, report) -> list[str]:
@@ -270,7 +325,26 @@ def bank_profile():
     return jsonify(ok=True)
 
 
+def _downstream_health(client) -> dict:
+    if client is None:
+        return {"configured": False}
+    try:
+        info = client.health()
+        return {"configured": True, "status": "ok",
+                "version": info.get("version")}
+    except DownstreamError as exc:
+        return {"configured": True, "status": "unreachable", "detail": str(exc)}
+
+
 @api.get("/health")
 def health():
-    return jsonify(status="ok", version=__version__, readonly=is_readonly(),
-                   bank_entries=len(load_library()))
+    return jsonify(
+        status="ok", version=__version__, readonly=is_readonly(),
+        default_workflow=default_workflow(),
+        bank_entries=len(load_library()),
+        downstream={
+            "parser": _downstream_health(get_parser_client()),
+            "researcher": _downstream_health(get_researcher_client()),
+            "generator": {"configured": get_generator_client() is not None},
+        },
+    )

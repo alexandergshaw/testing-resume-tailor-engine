@@ -26,6 +26,24 @@ python app.py        # UI + API at http://127.0.0.1:5000
 pytest               # full suite
 ```
 
+## Workflows (legacy vs composed)
+
+The composer runs one of two pipelines, selectable per request (`workflow` field) or via
+the `DEFAULT_WORKFLOW` env var (default `legacy` during integration):
+
+- **legacy** — the original fully-local, deterministic engine (local taxonomy + RAKE). No
+  downstream services required.
+- **composed** — extraction via the Parser API (canonical casing + emphases, classified
+  locally into skill categories), advisory research via the Researcher API. Falls back to
+  local extraction if the Parser is unavailable. Research never enters résumé output
+  (deterministic); on the cover-letter path it adds attributed company/role framing.
+
+`POST /api/v1/compare` runs both on identical inputs and returns a per-slot diff — the tool
+for shaking out composed-path bugs against the legacy baseline. See
+[docs/API_SPEC.md](docs/API_SPEC.md) for the full contract, determinism boundary, and the
+failure/degradation matrix. Configure downstreams with `PARSER_API_URL`,
+`RESEARCHER_API_URL`, `GENERATOR_API_URL` (+ matching `_API_KEY` vars).
+
 ## API
 
 All behavior is behind `/api/v1`. The UI pages (`/` and `/bank`) call these same endpoints —

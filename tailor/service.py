@@ -101,7 +101,12 @@ def _resolve_data(profile, library):
 
 
 def propose_for(posting: str, docx_bytes: bytes, profile: dict | None = None,
-                library: list | None = None) -> tuple[list[SlotProposal], list[Keyword]]:
+                library: list | None = None,
+                keywords: list[Keyword] | None = None
+                ) -> tuple[list[SlotProposal], list[Keyword]]:
+    """`keywords`, when provided, replaces local extraction — this is how the
+    composed workflow injects Parser-derived keywords. When None (legacy /
+    default), keywords are extracted locally, identical to the original engine."""
     if not posting or not posting.strip():
         raise InvalidInputError("'posting' must not be empty")
     resolved_profile, resolved_library = _resolve_data(profile, library)
@@ -111,7 +116,8 @@ def propose_for(posting: str, docx_bytes: bytes, profile: dict | None = None,
     if not placeholders:
         raise NoPlaceholdersError("no {{placeholders}} found in the template")
 
-    keywords = extract_keywords(posting)
+    if keywords is None:
+        keywords = extract_keywords(posting)
     proposals = propose_all(placeholders, keywords, resolved_profile, resolved_library)
 
     slots = [
@@ -130,17 +136,19 @@ def propose_for(posting: str, docx_bytes: bytes, profile: dict | None = None,
 
 def tailor_document(posting: str, docx_bytes: bytes, profile: dict | None = None,
                     library: list | None = None, values: dict | None = None,
-                    field_values: dict | None = None) -> tuple[bytes, dict]:
+                    field_values: dict | None = None,
+                    keywords: list[Keyword] | None = None) -> tuple[bytes, dict]:
     """Fill the template. `values` maps slot key ("NAME::occ") -> final text;
     `field_values` maps a placeholder NAME -> text applied to ALL its
     occurrences (handy for per-applicant fields like TARGET_ORGANIZATION that
     repeat). Precedence per slot: values > field_values > proposal. An empty
-    result leaves the {{placeholder}} in the document and is reported unfilled."""
+    result leaves the {{placeholder}} in the document and is reported unfilled.
+    `keywords` injects a precomputed keyword set (composed workflow)."""
     if values is not None and not isinstance(values, dict):
         raise InvalidInputError("'values' must be an object of slot key -> text")
     if field_values is not None and not isinstance(field_values, dict):
         raise InvalidInputError("'field_values' must be an object of name -> text")
-    slots, keywords = propose_for(posting, docx_bytes, profile, library)
+    slots, keywords = propose_for(posting, docx_bytes, profile, library, keywords=keywords)
 
     fill_values: dict[tuple[str, int], str] = {}
     report_slots = []
@@ -179,7 +187,8 @@ def tailor_cover_letter(posting: str, docx_bytes: bytes | None = None,
                         target_role: str | None = None,
                         target_organization: str | None = None,
                         profile: dict | None = None, library: list | None = None,
-                        values: dict | None = None) -> tuple[bytes, dict]:
+                        values: dict | None = None,
+                        keywords: list[Keyword] | None = None) -> tuple[bytes, dict]:
     """Cover-letter convenience over tailor_document: falls back to the bundled
     template when none is supplied, and expands target_role/target_organization
     across every {{TARGET_ROLE}}/{{TARGET_ORGANIZATION}} occurrence."""
@@ -191,7 +200,8 @@ def tailor_cover_letter(posting: str, docx_bytes: bytes | None = None,
     if target_organization is not None:
         field_values["TARGET_ORGANIZATION"] = str(target_organization)
     return tailor_document(posting, docx_bytes, profile=profile, library=library,
-                           values=values, field_values=field_values or None)
+                           values=values, field_values=field_values or None,
+                           keywords=keywords)
 
 
 def keywords_payload(keywords: list[Keyword]) -> dict[str, list[dict]]:
