@@ -33,7 +33,7 @@ unconfigured or unreachable — résumé generation never hard-fails on a Parser
 |---|---|---|
 | POST | `/proposals` | Scan template + parse posting → slots (proposed value, strategy, note, bank candidates), keywords, and (composed) advisory `research`. `template` optional → bundled default. |
 | POST | `/tailor` | Fill the résumé. `values` overrides; returns docx (binary, or `{docx_b64, report}` with `Accept: application/json`). Research never affects output. |
-| POST | `/cover-letter` | Like `/tailor` but for the cover letter; `target_role`/`target_organization` fill every occurrence; composed attaches `report.research` (company profile + role responsibilities, with attribution). |
+| POST | `/cover-letter` | Like `/tailor` but for the cover letter; `target_role`/`target_organization` fill every occurrence. Composed composes `{{ORGANIZATION_CONTEXT}}` (from `company.profile.industry`) and `{{ROLE_FOCUS}}` (from `role.responsibilities.essential_skills`) into the document, listing them in `report.research.applied_slots`; `report.research` also carries the company/role facts, attributions, and advisory favorable `news`. Missing research → those slots stay visible placeholders. |
 | POST | `/compare` | Run legacy + composed on identical inputs → per-slot diff (`changed_count`, `slots[]`). The bug-finding tool for the composed path. |
 | GET/POST/PUT/DELETE | `/bank*` | Insertion bank CRUD + profile (disabled when read-only). |
 | GET | `/health` | Engine version, `default_workflow`, bank size, and downstream status/versions. |

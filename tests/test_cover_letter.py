@@ -25,7 +25,8 @@ def test_bundled_template_has_expected_placeholders():
     document = docx.Document(DEFAULT_COVER_LETTER_TEMPLATE)
     names = {p.name for p in scan(document)}
     assert {"TARGET_ROLE", "TARGET_ORGANIZATION", "FULL_NAME", "CURRENT_EMPLOYER",
-            "YEARS_OF_EXPERIENCE", "JOB_RELEVANT_TECHNOLOGIES"} <= names
+            "YEARS_OF_EXPERIENCE", "JOB_RELEVANT_TECHNOLOGIES",
+            "ORGANIZATION_CONTEXT", "ROLE_FOCUS"} <= names
 
 
 # ----- service -----
@@ -66,6 +67,36 @@ def test_uploaded_template_overrides_bundled():
     docx_bytes, _ = tailor_cover_letter(
         POSTING, docx_bytes=template, target_organization="Globex")
     assert result_text(docx_bytes).strip() == "Hi Globex"
+
+
+# ----- research-fed slots (A) -----
+
+def test_cover_letter_field_values_compose_from_structured_facts():
+    from tailor.compose import cover_letter_field_values
+    fv = cover_letter_field_values({
+        "company": {"name": "Acme", "industry": "Insurance"},
+        "role": {"essential_skills": ["stakeholder management", "agile delivery",
+                                      "cloud architecture", "extra"]}})
+    assert fv["ORGANIZATION_CONTEXT"] == "your work in Insurance"
+    assert fv["ROLE_FOCUS"] == "stakeholder management, agile delivery, and cloud architecture"
+
+
+def test_cover_letter_field_values_partial_and_empty():
+    from tailor.compose import cover_letter_field_values
+    assert cover_letter_field_values({}) == {}
+    assert cover_letter_field_values({"company": {"industry": "Finance"}}) == {
+        "ORGANIZATION_CONTEXT": "your work in Finance"}
+
+
+def test_extra_field_values_render_into_document():
+    docx_bytes, _ = tailor_cover_letter(
+        POSTING, target_role="Director", target_organization="Acme",
+        extra_field_values={"ORGANIZATION_CONTEXT": "your work in Insurance",
+                            "ROLE_FOCUS": "stakeholder management and delivery"})
+    text = result_text(docx_bytes)
+    assert "your work in Insurance" in text
+    assert "stakeholder management and delivery" in text
+    assert "{{ORGANIZATION_CONTEXT}}" not in text
 
 
 # ----- endpoint -----

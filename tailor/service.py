@@ -219,10 +219,13 @@ def tailor_cover_letter(posting: str, docx_bytes: bytes | None = None,
                         profile: dict | None = None, library: list | None = None,
                         values: dict | None = None,
                         keywords: list[Keyword] | None = None,
+                        extra_field_values: dict | None = None,
                         generator_client=None) -> tuple[bytes, dict]:
     """Cover-letter convenience over tailor_document: falls back to the bundled
-    template when none is supplied, and expands target_role/target_organization
-    across every {{TARGET_ROLE}}/{{TARGET_ORGANIZATION}} occurrence."""
+    template when none is supplied, expands target_role/target_organization
+    across every {{TARGET_ROLE}}/{{TARGET_ORGANIZATION}} occurrence, and applies
+    `extra_field_values` (e.g. research-composed ORGANIZATION_CONTEXT/ROLE_FOCUS)
+    to all occurrences of those names."""
     if docx_bytes is None:
         docx_bytes = DEFAULT_COVER_LETTER_TEMPLATE.read_bytes()
     field_values = {}
@@ -230,6 +233,8 @@ def tailor_cover_letter(posting: str, docx_bytes: bytes | None = None,
         field_values["TARGET_ROLE"] = str(target_role)
     if target_organization is not None:
         field_values["TARGET_ORGANIZATION"] = str(target_organization)
+    if extra_field_values:
+        field_values.update({k: str(v) for k, v in extra_field_values.items() if v})
     return tailor_document(posting, docx_bytes, profile=profile, library=library,
                            values=values, field_values=field_values or None,
                            keywords=keywords, generator_client=generator_client)

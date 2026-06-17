@@ -20,7 +20,8 @@ from .. import __version__
 from ..clients import (DownstreamError, get_generator_client, get_parser_client,
                        get_researcher_client)
 from ..compose import (compare_proposals, company_news_suggestions,
-                       cover_letter_research, get_keywords, research_suggestions)
+                       cover_letter_field_values, cover_letter_research,
+                       get_keywords, research_suggestions)
 from ..config import default_workflow, resolve_workflow
 from ..library.store import (add_entry, auto_tags, delete_entry, load_library,
                              load_profile, save_profile, update_entry)
@@ -206,23 +207,30 @@ def cover_letter():
     workflow = resolve_workflow(inputs.get("workflow"))
     keywords, meta = get_keywords(inputs["posting"], workflow, get_parser_client())
     generator = get_generator_client() if workflow == "composed" else None
+
+    # Fetch research BEFORE building the doc so structured company/role facts can
+    # render into ORGANIZATION_CONTEXT / ROLE_FOCUS. News stays advisory.
+    research, research_warnings, research_fields = {}, [], {}
+    if workflow == "composed":
+        research, research_warnings = cover_letter_research(
+            inputs.get("target_role"), inputs.get("target_organization"),
+            get_researcher_client())
+        research_fields = cover_letter_field_values(research)
+        if research_fields:
+            research["applied_slots"] = sorted(research_fields)
+
     docx_bytes, report = tailor_cover_letter(
         inputs["posting"], inputs["docx_bytes"],
         target_role=inputs.get("target_role"),
         target_organization=inputs.get("target_organization"),
         profile=inputs["profile"], library=inputs["library"],
-        values=inputs["values"], keywords=keywords, generator_client=generator)
+        values=inputs["values"], keywords=keywords,
+        extra_field_values=research_fields, generator_client=generator)
     report.setdefault("meta", {}).update(_workflow_meta(workflow, meta))
-
-    if workflow == "composed":
-        # Real framing content for the target org/role, with attribution.
-        research, warnings = cover_letter_research(
-            inputs.get("target_role"), inputs.get("target_organization"),
-            get_researcher_client())
-        if research:
-            report["research"] = research
-        if warnings:
-            report["warnings"] = warnings
+    if research:
+        report["research"] = research
+    if research_warnings:
+        report["warnings"] = research_warnings
 
     remembered = _remember(inputs.get("remember"), report)
     if remembered:

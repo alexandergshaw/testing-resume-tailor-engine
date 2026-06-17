@@ -1,4 +1,5 @@
 """API-level workflow behavior: legacy default, composed opt-in, compare, health."""
+import base64
 import io
 import json
 
@@ -164,7 +165,30 @@ def test_cover_letter_composed_survives_researcher_outage(client, monkeypatch):
                       content_type="multipart/form-data")
     assert res.status_code == 200
     text = "\n".join(p.text for p in docx.Document(io.BytesIO(res.data)).paragraphs)
-    assert "Acme University" in text  # target field still filled
+    assert "Acme University" in text          # target field still filled
+    assert "{{ORGANIZATION_CONTEXT}}" in text  # research slot stays a visible placeholder
+
+
+def test_cover_letter_composed_renders_research_facts(client, monkeypatch):
+    researcher = FakeResearcher(results_by_intent={
+        "company.profile": {"name": "Acme University", "industry": "Higher Education"},
+        "role.responsibilities": {"title": "Director",
+                                  "essential_skills": ["digital strategy", "UX direction"]},
+        "company.news": NEWS_DATA})
+    use_fakes(monkeypatch, parser=FakeParser(), researcher=researcher)
+    res = client.post("/api/v1/cover-letter", headers={"Accept": "application/json"},
+                      data={"posting": POSTING, "workflow": "composed",
+                            "target_role": "Director",
+                            "target_organization": "Acme University"},
+                      content_type="multipart/form-data")
+    body = res.get_json()
+    text = "\n".join(
+        p.text for p in docx.Document(io.BytesIO(base64.b64decode(body["docx_b64"]))).paragraphs)
+    assert "your work in Higher Education" in text
+    assert "digital strategy and UX direction" in text
+    assert set(body["report"]["research"]["applied_slots"]) == {
+        "ORGANIZATION_CONTEXT", "ROLE_FOCUS"}
+    assert body["report"]["research"]["news"]["articles"]  # news stays advisory in report
 
 
 def test_health_reports_workflow_and_downstream(client, monkeypatch):

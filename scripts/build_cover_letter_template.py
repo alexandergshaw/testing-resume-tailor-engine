@@ -43,13 +43,14 @@ PARAGRAPHS = [
     "experience strengthened my ability to communicate technical concepts clearly, "
     "collaborate with diverse audiences, and {{STRATEGIC_OUTCOMES}}.",
 
-    "What draws me most to {{TARGET_ORGANIZATION}} is the opportunity to combine "
-    "strategic {{DOMAIN_CAPABILITIES}} leadership with meaningful institutional "
-    "impact. I am particularly excited by the role's emphasis on {{AREAS_OF_EMPHASIS}}, "
-    "{{DELIVERY_PRACTICES}}, {{LEADERSHIP_CAPABILITIES}}, and {{SOLUTION_OR_CAPABILITY}}. "
-    "My experience leading technical initiatives while balancing {{DOMAIN_CAPABILITIES}} "
-    "and organizational priorities has prepared me to contribute effectively to "
-    "{{TARGET_ORGANIZATION}}'s mission.",
+    "What draws me most to {{TARGET_ORGANIZATION}} is {{ORGANIZATION_CONTEXT}} and the "
+    "opportunity to combine strategic {{DOMAIN_CAPABILITIES}} leadership with meaningful "
+    "institutional impact. I am especially drawn to the role's focus on {{ROLE_FOCUS}}, "
+    "and excited by its emphasis on {{AREAS_OF_EMPHASIS}}, {{DELIVERY_PRACTICES}}, "
+    "{{LEADERSHIP_CAPABILITIES}}, and {{SOLUTION_OR_CAPABILITY}}. My experience leading "
+    "technical initiatives while balancing {{DOMAIN_CAPABILITIES}} and organizational "
+    "priorities has prepared me to contribute effectively to {{TARGET_ORGANIZATION}}'s "
+    "mission.",
 
     "I would welcome the opportunity to further discuss how my experience in "
     "{{SOLUTION_TYPES}}, {{INITIATIVE_TYPE}}, {{DOMAIN_CAPABILITIES}}, and higher "

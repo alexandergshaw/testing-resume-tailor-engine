@@ -192,6 +192,46 @@ def cover_letter_research(target_role: str | None, target_organization: str | No
     return research, warnings
 
 
+def _skill_label(skill) -> str | None:
+    if isinstance(skill, dict):
+        return skill.get("title") or skill.get("label") or skill.get("name")
+    return skill or None
+
+
+def _role_focus(role: dict | None) -> str | None:
+    skills = [_skill_label(s) for s in (role or {}).get("essential_skills", [])]
+    skills = [s for s in skills if s][:3]
+    if not skills:
+        return None
+    if len(skills) == 1:
+        return skills[0]
+    if len(skills) == 2:
+        return f"{skills[0]} and {skills[1]}"
+    return f"{skills[0]}, {skills[1]}, and {skills[2]}"
+
+
+def _org_context(company: dict | None) -> str | None:
+    industry = (company or {}).get("industry")
+    return f"your work in {industry}" if industry else None
+
+
+def cover_letter_field_values(research: dict) -> dict:
+    """Deterministic framing sentences for the cover-letter's research slots,
+    composed from STRUCTURED fields (not third-party prose). Returns only the
+    slots it can fill; missing ones stay MANUAL/visible in the document.
+
+    News stays advisory (research['news']) — deterministic paraphrase of
+    arbitrary headlines isn't safe, so it isn't auto-inserted."""
+    field_values = {}
+    org = _org_context(research.get("company"))
+    if org:
+        field_values["ORGANIZATION_CONTEXT"] = org
+    focus = _role_focus(research.get("role"))
+    if focus:
+        field_values["ROLE_FOCUS"] = focus
+    return field_values
+
+
 def compare_proposals(posting: str, docx_bytes: bytes, profile=None, library=None,
                       parser_client=None) -> dict:
     """Run legacy and composed on identical inputs and return a per-slot diff.
