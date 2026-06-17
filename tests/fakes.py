@@ -65,11 +65,13 @@ class FakeParser:
 
 
 class FakeResearcher:
-    def __init__(self, results_by_intent=None, error=None):
+    def __init__(self, results_by_intent=None, error=None, research_calls=0):
         self.results_by_intent = results_by_intent or {}
         self.error = error
         self.batch_calls = 0
+        self.research_calls = research_calls
         self.last_requests = None
+        self.last_research = None
 
     def batch(self, requests):
         self.batch_calls += 1
@@ -78,20 +80,45 @@ class FakeResearcher:
             raise self.error
         return [self._envelope(r["intent"], r["params"]) for r in requests]
 
+    def research(self, intent, params):
+        self.research_calls += 1
+        self.last_research = (intent, params)
+        if self.error:
+            raise self.error
+        return self._envelope(intent, params)
+
     def _envelope(self, intent, params):
         data = self.results_by_intent.get(intent, {})
+        source = ("GDELT — open data" if intent == "company.news"
+                  else "Wikipedia — CC BY-SA 4.0")
         return {
             "intent": intent, "data": data,
-            "sources": [{"name": "Wikipedia", "url": "https://en.wikipedia.org",
-                         "license": "CC BY-SA 4.0",
-                         "attribution": "Wikipedia — CC BY-SA 4.0"}] if data else [],
+            "sources": [{"name": source.split(" — ")[0], "attribution": source}]
+            if data else [],
             "attribution_required": bool(data),
             "degraded": False, "warnings": [], "cache": {"hit": False, "age_s": None},
-            "meta": {"version": "1.0.0"},
+            "meta": {"version": "1.1.0"},
         }
 
     def health(self):
-        return {"status": "ok", "version": "1.0.0"}
+        return {"status": "ok", "version": "1.1.0"}
+
+
+# A company.news data payload with a clearly-favorable and a sub-threshold item.
+NEWS_DATA = {
+    "company": "Acme Insurance Group", "as_of": "2026-06-16",
+    "articles": [
+        {"title": "Acme named to Best Places to Work 2026", "source": "businesswire.com",
+         "url": "https://example.com/a", "published": "2026-06-10T00:00:00Z",
+         "tone": 5.4, "language": "en"},
+        {"title": "Acme posts record quarterly growth", "source": "reuters.com",
+         "url": "https://example.com/b", "published": "2026-06-01T00:00:00Z",
+         "tone": 3.1, "language": "en"},
+        {"title": "Acme faces routine regulatory review", "source": "example.org",
+         "url": "https://example.com/c", "published": "2026-05-20T00:00:00Z",
+         "tone": 0.4, "language": "en"},  # below FAVORABLE_MIN_TONE -> dropped
+    ],
+}
 
 
 class FakeGenerator:

@@ -19,8 +19,8 @@ from flask import Blueprint, jsonify, request, send_file
 from .. import __version__
 from ..clients import (DownstreamError, get_generator_client, get_parser_client,
                        get_researcher_client)
-from ..compose import (compare_proposals, cover_letter_research, get_keywords,
-                       research_suggestions)
+from ..compose import (compare_proposals, company_news_suggestions,
+                       cover_letter_research, get_keywords, research_suggestions)
 from ..config import default_workflow, resolve_workflow
 from ..library.store import (add_entry, auto_tags, delete_entry, load_library,
                              load_profile, save_profile, update_entry)
@@ -141,11 +141,15 @@ def proposals():
     slots, keywords = propose_for(inputs["posting"], _resume_template(inputs),
                                   inputs["profile"], inputs["library"], keywords=keywords)
 
-    research, warnings = [], []
+    research, warnings, company_news = [], [], {}
     if workflow == "composed":
         # Advisory only — surfaced for the review UI, never folded into values.
-        research, warnings = research_suggestions(meta.get("emphases"),
-                                                   get_researcher_client())
+        researcher = get_researcher_client()
+        research, warnings = research_suggestions(meta.get("emphases"), researcher)
+        # Favorable company news (volatile) when a target company is named.
+        company_news, news_warnings = company_news_suggestions(
+            inputs.get("target_organization"), researcher)
+        warnings = warnings + news_warnings
     return jsonify(
         engine_version=__version__,
         workflow=workflow,
@@ -154,6 +158,7 @@ def proposals():
         slots=[slot.to_dict() for slot in slots],
         keywords=keywords_payload(keywords),
         research=research,
+        company_news=company_news,
         warnings=warnings,
     )
 

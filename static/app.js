@@ -26,6 +26,8 @@ const buildFormData = () => {
   const fd = new FormData();
   fd.append("posting", $("#posting").value);
   fd.append("workflow", activeWorkflow);
+  const company = $("#target-company").value.trim();
+  if (company) fd.append("target_organization", company);
   if (templateFile) fd.append("template", templateFile);  // omit -> bundled default
   return fd;
 };
@@ -103,6 +105,7 @@ function renderReview(data) {
       </ul>`).join("");
 
   renderResearch(data.research || []);
+  renderNews(data.company_news || {});
 
   document.querySelectorAll(".bank-picker").forEach((picker) => {
     picker.addEventListener("change", () => {
@@ -116,6 +119,33 @@ function renderReview(data) {
 
   $("#review").hidden = false;
   $("#review").scrollIntoView({ behavior: "smooth" });
+}
+
+// Favorable company news (composed workflow, target company given). Volatile +
+// advisory — shown with date/source/tone for the human to rephrase, never auto-inserted.
+function renderNews(news) {
+  const panel = $("#news-panel");
+  if (!panel) return;
+  const articles = news.articles || [];
+  if (!articles.length) { panel.hidden = true; panel.innerHTML = ""; return; }
+  panel.hidden = false;
+  const asOf = news.as_of ? ` as of ${escapeHtml(news.as_of)}` : "";
+  panel.innerHTML = `<h2>Company news</h2>` +
+    `<p class="hint">Favorable recent items${asOf} — verify the date and rephrase the
+     fact in your own words; don't paste article text.</p>` +
+    articles.map((a) => {
+      const date = a.published ? escapeHtml(String(a.published).slice(0, 10)) : "";
+      const tone = a.tone != null ? `tone ${escapeHtml(String(a.tone))}` : "";
+      const title = a.url
+        ? `<a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">${escapeHtml(a.title || a.url)}</a>`
+        : escapeHtml(a.title || "");
+      return `<div class="research-item">
+        <div class="research-summary">${title}</div>
+        <div class="research-source">${escapeHtml(a.source || "")} · ${date} · ${tone}</div>
+      </div>`;
+    }).join("") +
+    (news.attributions || []).map((s) =>
+      `<div class="research-source">${escapeHtml(s)}</div>`).join("");
 }
 
 // Advisory research context (composed workflow only) — never auto-inserted.

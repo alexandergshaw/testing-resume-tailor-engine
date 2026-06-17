@@ -11,6 +11,41 @@ from .extraction.source import keywords_from_parser
 from .service import propose_for
 
 MAX_RESEARCH_EMPHASES = 4
+# company.news is volatile; only clearly-favorable items (tone at/above this)
+# are surfaced. Tunable. The Researcher also filters server-side via min_tone.
+FAVORABLE_MIN_TONE = 2.0
+NEWS_LIMIT = 8
+
+
+def _news_request(identifier: str) -> dict:
+    return {"intent": "company.news",
+            "params": {"name": identifier, "limit": NEWS_LIMIT,
+                       "min_tone": FAVORABLE_MIN_TONE, "sort": "tone"}}
+
+
+def _news_from_envelope(envelope: dict) -> dict:
+    """Extract a compact, attributed, favorable news payload from a company.news
+    envelope. Articles are headline + link + metadata only (no body text)."""
+    data = envelope.get("data") or {}
+    articles = []
+    for item in data.get("articles", []):
+        tone = item.get("tone")
+        if tone is not None and tone < FAVORABLE_MIN_TONE:
+            continue  # belt-and-suspenders: enforce favorable client-side too
+        articles.append({
+            "title": item.get("title"), "source": item.get("source"),
+            "url": item.get("url"), "published": item.get("published"),
+            "tone": tone,
+        })
+    if not articles:
+        return {}
+    return {
+        "as_of": data.get("as_of"),
+        "articles": articles,
+        "attributions": [s["attribution"] for s in envelope.get("sources", [])
+                         if s.get("attribution")],
+        "attribution_required": envelope.get("attribution_required", False),
+    }
 
 
 def get_keywords(posting: str, workflow: str, parser_client=None
@@ -91,6 +126,25 @@ def research_suggestions(emphases: dict | None, researcher_client=None
     return suggestions, warnings
 
 
+def company_news_suggestions(target_organization: str | None, researcher_client=None
+                             ) -> tuple[dict, list[str]]:
+    """Advisory, clearly-favorable company news for the review UI (resume path).
+    Volatile and never auto-inserted. Resilient to outages and a disabled
+    gdelt source (501 source_disabled)."""
+    if not target_organization:
+        return {}, []
+    if researcher_client is None:
+        return {}, ["researcher not configured"]
+    request = _news_request(target_organization)
+    try:
+        envelope = researcher_client.research(request["intent"], request["params"])
+    except DownstreamError as exc:
+        return {}, [f"company news unavailable: {exc}"]
+    news = _news_from_envelope(envelope)
+    warnings = list(envelope.get("warnings", [])) if not news else []
+    return news, warnings
+
+
 def cover_letter_research(target_role: str | None, target_organization: str | None,
                           researcher_client=None) -> tuple[dict, list[str]]:
     """Real framing content for the cover-letter path: company profile + role
@@ -103,6 +157,9 @@ def cover_letter_research(target_role: str | None, target_organization: str | No
     if target_role:
         requests.append({"intent": "role.responsibilities", "params": {"title": target_role}})
         kinds.append("role")
+    if target_organization:
+        requests.append(_news_request(target_organization))  # favorable recent items
+        kinds.append("news")
     if not requests:
         return {}, []
     if researcher_client is None:
@@ -115,15 +172,23 @@ def cover_letter_research(target_role: str | None, target_organization: str | No
     research: dict = {"attributions": []}
     warnings: list[str] = []
     for kind, envelope in zip(kinds, results):
-        data = envelope.get("data") or {}
         if envelope.get("degraded"):
             warnings.extend(envelope.get("warnings", []))
+        if kind == "news":
+            news = _news_from_envelope(envelope)
+            if news:
+                research["news"] = news
+                research["attributions"].extend(news["attributions"])
+            continue
+        data = envelope.get("data") or {}
         if data:
             research[kind] = data
         for source in envelope.get("sources", []):
             attribution = source.get("attribution")
             if attribution and attribution not in research["attributions"]:
                 research["attributions"].append(attribution)
+    # de-dup attributions while preserving order
+    research["attributions"] = list(dict.fromkeys(research["attributions"]))
     return research, warnings
 
 

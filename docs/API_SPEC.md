@@ -62,9 +62,14 @@ folded into `values`) and is real, attributed content only on the cover-letter p
   classifies each keyword into its skill category (technology/tool_platform/methodology/
   soft_skill/certification/domain) using the local taxonomy — that classification is
   résumé-specific and stays here, not in the Parser.
-- **Researcher API** (`/v1/research/batch`): called once per request, one entry per
-  emphasis (résumé) or for company/role (cover letter). Honors `sources[].license` via the
-  provided `attribution` strings.
+- **Researcher API** (`/v1/research`, `/v1/research/batch`, contract 1.1.0): one batched
+  call per request — one entry per emphasis (résumé `concept.overview`) or for
+  company/role (cover letter). Honors `sources[].license` via the provided `attribution`
+  strings. **`company.news`** (volatile) supplies clearly-favorable recent items
+  (`min_tone ≥ 2.0`, tone-sorted) when a `target_organization` is given: advisory on the
+  résumé (`proposals.company_news`, never inserted) and folded into `report.research.news`
+  on the cover letter. News carries `as_of` + per-article dates; a disabled source
+  (`501 source_disabled`) or outage degrades to no-news with a warning.
 - **Document Generator API** (`/api/generate`): in the composed workflow the final `.docx`
   is rendered here. Because Jinja can't fill repeated identical placeholders
   (`{{SKILLS_LINE}}` ×5) with distinct values, the composer first rewrites each occurrence

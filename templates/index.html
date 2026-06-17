@@ -28,6 +28,9 @@
     <input id="template" type="file" accept=".docx">
     <p class="hint">Leave blank to use the bundled standardized template.</p>
 
+    <label for="target-company">Target company <span class="hint-inline">(optional — pulls favorable recent news, New APIs only)</span></label>
+    <input id="target-company" type="text" placeholder="e.g. Acme Insurance Group">
+
     <label for="api-key">API key (optional — sent as X-API-Key, stored in this browser)</label>
     <input id="api-key" type="password" autocomplete="off" placeholder="only needed against an authed deployment">
 
@@ -53,6 +56,7 @@
     <p class="hint">Copy-paste fodder, grouped by category.</p>
     <div id="keyword-groups"></div>
     <div id="research-panel" hidden></div>
+    <div id="news-panel" hidden></div>
   </aside>
 </section>
 

@@ -92,7 +92,9 @@ label { display: block; font-weight: 600; margin: 16px 0 6px; }
 .wf-pill.wf-composed { background: #0e7490; }
 .wf-pill.wf-legacy { background: #6c4fc4; }
 
-#research-panel { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
+.hint-inline { font-weight: 400; color: var(--muted); font-size: 12px; }
+#research-panel, #news-panel { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
+.research-source a { color: var(--accent); }
 .research-item { margin-bottom: 12px; }
 .research-emphasis { font-weight: 600; font-size: 13.5px; }
 .research-summary { font-size: 13px; color: var(--ink); }

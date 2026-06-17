@@ -1,9 +1,10 @@
 """Composed-workflow orchestration: keyword mapping, fallback, research batching."""
 from tailor.clients.base import DownstreamError
-from tailor.compose import (compare_proposals, cover_letter_research, get_keywords,
-                            research_suggestions)
+from tailor.compose import (FAVORABLE_MIN_TONE, compare_proposals,
+                            company_news_suggestions, cover_letter_research,
+                            get_keywords, research_suggestions)
 from tailor.extraction.source import classify_keyword, keywords_from_parser
-from tests.fakes import PARSE_FIXTURE, FakeParser, FakeResearcher
+from tests.fakes import NEWS_DATA, PARSE_FIXTURE, FakeParser, FakeResearcher
 from tests.test_service import POSTING, TEMPLATE
 
 
@@ -77,6 +78,43 @@ def test_research_suggestions_resilient_to_outage():
     suggestions, warnings = research_suggestions(emphases, researcher)
     assert suggestions == []
     assert warnings and "unavailable" in warnings[0]
+
+
+def test_company_news_only_favorable_items():
+    researcher = FakeResearcher(results_by_intent={"company.news": NEWS_DATA})
+    news, warnings = company_news_suggestions("Acme Insurance Group", researcher)
+    assert researcher.research_calls == 1
+    assert researcher.last_research[0] == "company.news"
+    # the sub-threshold (tone 0.4) item is dropped; favorable ones remain
+    assert [a["title"] for a in news["articles"]] == [
+        "Acme named to Best Places to Work 2026", "Acme posts record quarterly growth"]
+    assert all(a["tone"] >= FAVORABLE_MIN_TONE for a in news["articles"])
+    assert news["as_of"] == "2026-06-16"
+    assert any("GDELT" in a for a in news["attributions"])
+
+
+def test_company_news_requires_target_and_client():
+    assert company_news_suggestions(None, FakeResearcher()) == ({}, [])
+    news, warnings = company_news_suggestions("Acme", None)
+    assert news == {} and "not configured" in warnings[0]
+
+
+def test_company_news_resilient_to_outage_and_disabled_source():
+    down = FakeResearcher(error=DownstreamError("researcher", "HTTP 501", status=501))
+    news, warnings = company_news_suggestions("Acme", down)
+    assert news == {}
+    assert warnings and "unavailable" in warnings[0]
+
+
+def test_cover_letter_research_includes_news():
+    researcher = FakeResearcher(results_by_intent={
+        "company.profile": {"name": "Acme"},
+        "role.responsibilities": {"title": "Engineer"},
+        "company.news": NEWS_DATA})
+    research, _ = cover_letter_research("Engineer", "Acme", researcher)
+    assert research["company"]["name"] == "Acme"
+    assert research["news"]["articles"]
+    assert any("GDELT" in a for a in research["attributions"])
 
 
 def test_cover_letter_research_returns_attribution():

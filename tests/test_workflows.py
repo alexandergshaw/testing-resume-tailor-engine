@@ -8,7 +8,7 @@ import pytest
 import tailor.web.api as api
 from app import create_app
 from tailor.clients.base import DownstreamError
-from tests.fakes import FakeGenerator, FakeParser, FakeResearcher
+from tests.fakes import NEWS_DATA, FakeGenerator, FakeParser, FakeResearcher
 from tests.test_service import POSTING, TEMPLATE
 
 
@@ -51,6 +51,24 @@ def test_composed_uses_parser_and_returns_research(client, monkeypatch):
     assert parser.calls == 1
     assert body["meta"]["degraded"] is False
     assert body["research"]  # advisory suggestions present
+
+
+def test_proposals_composed_returns_company_news(client, monkeypatch):
+    researcher = FakeResearcher(results_by_intent={
+        "concept.overview": {"summary": "ctx"}, "company.news": NEWS_DATA})
+    use_fakes(monkeypatch, parser=FakeParser(), researcher=researcher)
+    body = client.post("/api/v1/proposals", **multipart(
+        workflow="composed", target_organization="Acme Insurance Group")).get_json()
+    assert body["company_news"]["articles"]
+    assert all(a["tone"] >= 2.0 for a in body["company_news"]["articles"])
+
+
+def test_proposals_composed_no_company_without_target(client, monkeypatch):
+    researcher = FakeResearcher(results_by_intent={"company.news": NEWS_DATA})
+    use_fakes(monkeypatch, parser=FakeParser(), researcher=researcher)
+    body = client.post("/api/v1/proposals", **multipart(workflow="composed")).get_json()
+    assert body["company_news"] == {}
+    assert researcher.research_calls == 0  # no target -> no news call
 
 
 def test_composed_falls_back_when_parser_down(client, monkeypatch):

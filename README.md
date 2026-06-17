@@ -39,6 +39,8 @@ the `DEFAULT_WORKFLOW` env var (default `legacy` during integration):
   placeholders to unique variables so the generic Jinja renderer can fill them). Each step
   falls back to the local path if its service is unavailable. Research never enters résumé
   output (deterministic); on the cover-letter path it adds attributed company/role framing.
+  Naming a **target company** also pulls clearly-favorable recent news (Researcher
+  `company.news`) — advisory on the résumé review screen, content on the cover letter.
 
 `POST /api/v1/compare` runs both on identical inputs and returns a per-slot diff — the tool
 for shaking out composed-path bugs against the legacy baseline. See
