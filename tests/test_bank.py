@@ -140,7 +140,7 @@ def test_bank_api_crud(client, bank_path):
 
 def test_remember_on_tailor_saves_to_bank(client, bank_path):
     key = "MEASURABLE_IMPACT::0"
-    response = client.post("/api/v1/tailor", data={
+    response = client.post("/api/v1/resume", data={
         "posting": "We need CI/CD and Kubernetes experience",
         "template": (io.BytesIO(_template_bytes()), "t.docx"),
         "values": json.dumps({key: "a 9x improvement in deploy frequency"}),

@@ -164,10 +164,14 @@ def proposals():
     )
 
 
+def _wants_json() -> bool:
+    return "application/json" in (request.headers.get("Accept") or "")
+
+
 def _docx_response(docx_bytes: bytes, report: dict, download_name: str):
     """Either the binary docx (default) or {docx_b64, report} when the caller
     sends Accept: application/json."""
-    if "application/json" in (request.headers.get("Accept") or ""):
+    if _wants_json():
         return jsonify(
             engine_version=__version__,
             docx_b64=base64.b64encode(docx_bytes).decode("ascii"),
@@ -182,11 +186,14 @@ def _docx_response(docx_bytes: bytes, report: dict, download_name: str):
     return response
 
 
-@api.post("/tailor")
-def tailor():
+@api.post("/resume")
+def resume():
+    """One-shot resume render — the resume counterpart to /cover-letter.
+    Chain: Parser -> Document Generator. Research is NEVER folded into the
+    document (resume output stays deterministic); it's attached to the JSON
+    report as advisory context only, matching /cover-letter's report.research."""
     inputs = _read_inputs(require_template=False)
     workflow = resolve_workflow(inputs.get("workflow"))
-    # Research is NEVER used here — resume output stays deterministic.
     keywords, meta = get_keywords(inputs["posting"], workflow, get_parser_client())
     generator = get_generator_client() if workflow == "composed" else None
     docx_bytes, report = tailor_document(
@@ -194,6 +201,20 @@ def tailor():
         inputs["profile"], inputs["library"], inputs["values"], keywords=keywords,
         generator_client=generator)
     report.setdefault("meta", {}).update(_workflow_meta(workflow, meta))
+
+    # Advisory research only when we can return it (JSON report). A binary
+    # download stays Parser -> Generator with no Researcher call.
+    if workflow == "composed" and _wants_json():
+        researcher = get_researcher_client()
+        research, warnings = research_suggestions(meta.get("emphases"), researcher)
+        company_news, news_warnings = company_news_suggestions(
+            inputs.get("target_organization"), researcher)
+        if research:
+            report["research"] = research
+        if company_news:
+            report["company_news"] = company_news
+        if warnings + news_warnings:
+            report.setdefault("warnings", []).extend(warnings + news_warnings)
 
     remembered = _remember(inputs.get("remember"), report)
     if remembered:

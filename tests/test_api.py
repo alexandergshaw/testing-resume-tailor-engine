@@ -51,7 +51,7 @@ def test_proposals_json_base64(client):
 
 
 def test_tailor_binary_default(client):
-    res = client.post("/api/v1/tailor", **multipart(
+    res = client.post("/api/v1/resume", **multipart(
         values=json.dumps({"MEASURABLE_IMPACT::0": "a 9x speedup"})))
     assert res.status_code == 200
     assert "wordprocessingml" in res.mimetype
@@ -62,7 +62,7 @@ def test_tailor_binary_default(client):
 
 
 def test_tailor_json_accept(client):
-    res = client.post("/api/v1/tailor", headers={"Accept": "application/json"},
+    res = client.post("/api/v1/resume", headers={"Accept": "application/json"},
                       **multipart())
     assert res.status_code == 200
     body = res.get_json()
@@ -73,8 +73,8 @@ def test_tailor_json_accept(client):
 def test_proposals_then_tailor_round_trip_matches_direct(client):
     proposals = client.post("/api/v1/proposals", **multipart()).get_json()
     values = {slot["key"]: slot["value"] for slot in proposals["slots"]}
-    via_review = client.post("/api/v1/tailor", **multipart(values=json.dumps(values)))
-    direct = client.post("/api/v1/tailor", **multipart())
+    via_review = client.post("/api/v1/resume", **multipart(values=json.dumps(values)))
+    direct = client.post("/api/v1/resume", **multipart())
     text = lambda res: "\n".join(  # noqa: E731
         p.text for p in docx.Document(io.BytesIO(res.data)).paragraphs)
     assert text(via_review) == text(direct)
@@ -99,7 +99,7 @@ def test_error_responses(client):
         content_type="multipart/form-data")
     assert empty.status_code == 422
 
-    bad_json_field = client.post("/api/v1/tailor", **multipart(values="{not json"))
+    bad_json_field = client.post("/api/v1/resume", **multipart(values="{not json"))
     assert bad_json_field.status_code == 400
 
     wrong_type = client.post("/api/v1/proposals", data="plain text",
@@ -124,7 +124,7 @@ def test_readonly_blocks_bank_writes_and_remember(client, monkeypatch):
     assert blocked.status_code == 403
 
     # remember is silently ignored: tailor succeeds, nothing persisted.
-    res = client.post("/api/v1/tailor", headers={"Accept": "application/json"},
+    res = client.post("/api/v1/resume", headers={"Accept": "application/json"},
                       **multipart(values=json.dumps({"RANK::0": "Lead"}),
                                   remember=json.dumps(["RANK::0"])))
     assert res.status_code == 200

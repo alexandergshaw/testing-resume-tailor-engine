@@ -92,7 +92,7 @@ def test_tailor_composed_does_not_depend_on_researcher(client, monkeypatch):
             return {"version": "x"}
 
     use_fakes(monkeypatch, parser=FakeParser(), researcher=Exploding())
-    res = client.post("/api/v1/tailor", **multipart(workflow="composed"))
+    res = client.post("/api/v1/resume", **multipart(workflow="composed"))
     assert res.status_code == 200
     assert res.data[:2] == b"PK"
 
@@ -100,7 +100,7 @@ def test_tailor_composed_does_not_depend_on_researcher(client, monkeypatch):
 def test_composed_renders_via_generator(client, monkeypatch):
     generator = FakeGenerator()
     use_fakes(monkeypatch, parser=FakeParser(), generator=generator)
-    res = client.post("/api/v1/tailor", headers={"Accept": "application/json"},
+    res = client.post("/api/v1/resume", headers={"Accept": "application/json"},
                       **multipart(workflow="composed"))
     assert res.status_code == 200
     assert generator.calls and generator.calls[0]["document_type"] == "docx"
@@ -110,7 +110,7 @@ def test_composed_renders_via_generator(client, monkeypatch):
 def test_legacy_never_calls_generator(client, monkeypatch):
     generator = FakeGenerator()
     use_fakes(monkeypatch, parser=FakeParser(), generator=generator)
-    res = client.post("/api/v1/tailor", headers={"Accept": "application/json"},
+    res = client.post("/api/v1/resume", headers={"Accept": "application/json"},
                       **multipart(workflow="legacy"))
     assert generator.calls == []
     assert res.get_json()["report"]["meta"]["renderer"] == "local"
@@ -119,11 +119,40 @@ def test_legacy_never_calls_generator(client, monkeypatch):
 def test_composed_generator_outage_falls_back(client, monkeypatch):
     generator = FakeGenerator(error=DownstreamError("generator", "down"))
     use_fakes(monkeypatch, parser=FakeParser(), generator=generator)
-    res = client.post("/api/v1/tailor", headers={"Accept": "application/json"},
+    res = client.post("/api/v1/resume", headers={"Accept": "application/json"},
                       **multipart(workflow="composed"))
     report = res.get_json()["report"]
     assert report["meta"]["renderer"] == "local"
     assert any("generator unavailable" in w for w in report.get("warnings", []))
+
+
+def test_resume_json_carries_advisory_research_but_not_in_doc(client, monkeypatch):
+    researcher = FakeResearcher(results_by_intent={
+        "concept.overview": {"summary": "ctx"}, "company.news": NEWS_DATA})
+    use_fakes(monkeypatch, parser=FakeParser(), researcher=researcher)
+    # JSON response -> report carries advisory research + company news...
+    js = client.post("/api/v1/resume", headers={"Accept": "application/json"},
+                     **multipart(workflow="composed",
+                                 target_organization="Acme Insurance Group")).get_json()
+    assert js["report"].get("research")
+    assert js["report"].get("company_news", {}).get("articles")
+    # ...but the document is byte-identical to a run with no researcher (research
+    # never enters resume output).
+    use_fakes(monkeypatch, parser=FakeParser(), researcher=None)
+    plain = client.post("/api/v1/resume", headers={"Accept": "application/json"},
+                        **multipart(workflow="composed",
+                                    target_organization="Acme Insurance Group")).get_json()
+    assert js["docx_b64"] == plain["docx_b64"]
+
+
+def test_resume_binary_makes_no_researcher_call(client, monkeypatch):
+    researcher = FakeResearcher(results_by_intent={"concept.overview": {"summary": "x"}})
+    use_fakes(monkeypatch, parser=FakeParser(), researcher=researcher)
+    res = client.post("/api/v1/resume", **multipart(workflow="composed",
+                                                    target_organization="Acme"))
+    assert res.status_code == 200
+    assert res.data[:2] == b"PK"
+    assert researcher.batch_calls == 0 and researcher.research_calls == 0
 
 
 def test_unknown_workflow_is_400(client, monkeypatch):

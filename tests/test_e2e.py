@@ -50,7 +50,7 @@ def test_full_flow_with_real_template(client):
     # Caller accepts proposals, supplying stand-ins for unfilled slots.
     values = {s["key"]: s["value"] or "FILLED-BY-TEST" for s in slots}
 
-    tailored = client.post("/api/v1/tailor", **_multipart(values=json.dumps(values)))
+    tailored = client.post("/api/v1/resume", **_multipart(values=json.dumps(values)))
     assert tailored.status_code == 200
     assert tailored.headers["Content-Disposition"].endswith('"Tailored Resume.docx"')
     assert tailored.headers["X-Unfilled-Count"] == "0"

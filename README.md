@@ -56,14 +56,14 @@ use them as a live tester; each page has a request/response log panel and a copy
 | Endpoint | Purpose |
 |---|---|
 | `POST /api/v1/proposals` | Scan the template + parse the posting; returns every slot with its proposed value, strategy, note, and ranked bank candidates, plus extracted keywords. `template` is **optional** — omit it to use the bundled `data/resume_template.docx`. |
-| `POST /api/v1/tailor` | Same inputs + optional `values` overrides; returns the tailored docx (binary by default, JSON+base64 with `Accept: application/json`). `template` optional (bundled default). Optional `remember` list persists values to the bank (local only). |
-| `POST /api/v1/cover-letter` | Tailors a cover letter. `template` is **optional** — omit it to use the bundled `data/cover_letter_template.docx`. Adds `target_role` / `target_organization` fields that fill every `{{TARGET_ROLE}}` / `{{TARGET_ORGANIZATION}}` occurrence. Same output modes, overrides, and `remember` as `/tailor`; downloads as `Cover Letter.docx`. |
+| `POST /api/v1/resume` | One-shot résumé render (counterpart to `/cover-letter`). Same inputs + optional `values` overrides; returns the tailored docx (binary by default, JSON+base64 with `Accept: application/json`). `template` optional (bundled default). Optional `remember`. Composed JSON responses also carry advisory `research`/`company_news` in the report — never folded into the document (résumé output stays deterministic). |
+| `POST /api/v1/cover-letter` | Tailors a cover letter. `template` is **optional** — omit it to use the bundled `data/cover_letter_template.docx`. Adds `target_role` / `target_organization` fields that fill every `{{TARGET_ROLE}}` / `{{TARGET_ORGANIZATION}}` occurrence. Same output modes, overrides, and `remember` as `/resume`; downloads as `Cover Letter.docx`. |
 | `GET /api/v1/bank` / `POST /api/v1/bank/entries` / `PUT,DELETE /api/v1/bank/entries/<id>` / `POST /api/v1/bank/profile` | Insertion bank CRUD (disabled when read-only). |
 | `GET /api/v1/health` | Version, read-only flag, bank size. |
 
 ### Inputs
 
-Both `proposals` and `tailor` accept either:
+Both `proposals` and `resume` accept either:
 
 - `multipart/form-data`: `posting` (text), `template` (file), and optional JSON-string fields
   `values`, `profile`, `library`, `remember`
@@ -84,7 +84,7 @@ curl -X POST https://<deployment>/api/v1/proposals \
   -F "template=@Template Resume.docx"
 
 # Tailor with overrides, save the docx
-curl -X POST https://<deployment>/api/v1/tailor \
+curl -X POST https://<deployment>/api/v1/resume \
   -H "X-API-Key: $KEY" \
   -F "posting=<posting text>" \
   -F "template=@Template Resume.docx" \

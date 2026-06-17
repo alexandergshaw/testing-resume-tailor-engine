@@ -60,7 +60,7 @@ def test_proposals_falls_back_to_bundled_template(client):
 
 
 def test_tailor_falls_back_to_bundled_template(client):
-    res = client.post("/api/v1/tailor", data={"posting": POSTING},
+    res = client.post("/api/v1/resume", data={"posting": POSTING},
                       content_type="multipart/form-data")
     assert res.status_code == 200
     assert res.headers["Content-Disposition"].endswith('"Tailored Resume.docx"')

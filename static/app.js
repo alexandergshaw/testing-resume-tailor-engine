@@ -184,14 +184,14 @@ $("#tailor-btn").addEventListener("click", async () => {
   try {
     // Accept: application/json so the report is visible in the log panel;
     // the docx arrives base64-encoded and is downloaded client-side.
-    const res = await fetch("/api/v1/tailor", {
+    const res = await fetch("/api/v1/resume", {
       method: "POST", body: fd,
       headers: apiHeaders({ Accept: "application/json" }),
     });
     const data = await res.json();
     const loggable = { ...data };
     if (loggable.docx_b64) loggable.docx_b64 = `<${loggable.docx_b64.length} base64 chars>`;
-    logExchange("POST", "/api/v1/tailor",
+    logExchange("POST", "/api/v1/resume",
       summarizeRequest({ values: `${Object.keys(values).length} keys`,
                          remember: remember.length }),
       res.status, loggable);
